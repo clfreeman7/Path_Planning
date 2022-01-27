@@ -94,6 +94,7 @@ void define_states() {
  */
 void cycle_through_states (int8_t *cycle, int8_t cycle_size) {
   for (int i=0; i<cycle_size;i++) {
+    unsigned long transition_start = millis();
     Serial.print("State ");
     Serial.print(cycle[i]);
     Serial.print(": ");
@@ -118,7 +119,9 @@ void cycle_through_states (int8_t *cycle, int8_t cycle_size) {
             digitalWrite(motor[2*k+1], LOW);
           }
           if (k==3){
-            delay(T_transition - T_unspool);
+            while (millis() -transition_start<= T_transition-1) {
+            delay(1);
+            }
             Serial.println("");
           }
         }
