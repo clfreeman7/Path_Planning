@@ -75,12 +75,12 @@ void define_states() {
       spacing = spacing*2;
     }
   }
-  for (int m=1; m<=number_of_states; m++) {
+  for (int m=0; m<=number_of_states-1; m++) {
     /* This part is optional as it just prints the binary value of each 
      *  state number (helpful for debugging).
      */
     Serial.print("State ");
-    Serial.print(m);
+    Serial.print(m+1);
     Serial.print(" = ");
     for (int n=0; n<=number_of_motors-1;n++){
       Serial.print(state_matrix[n][m]);
@@ -98,7 +98,7 @@ void cycle_through_states (int8_t *cycle, int8_t cycle_size) {
     Serial.print(cycle[i]);
     Serial.print(": ");
     for (int j=0; j<=3; j++) {
-      Serial.print(state_matrix[j][cycle[i]]);
+      Serial.print(state_matrix[j][cycle[i]-1]);
       if (state_matrix[j][cycle[i]-1] == 0 && just_relaxed[j]==false) {
         digitalWrite(motor[2*j], LOW);
         digitalWrite(motor[2*j+1], HIGH);
