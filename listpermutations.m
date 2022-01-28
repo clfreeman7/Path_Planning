@@ -1,4 +1,4 @@
-function allPerms = listpermutations(gaitCycle, issymmetric)
+function [allPerms, nPerms] = listpermutations(gaitCycle, issymmetric)
 % LISTPERMUTATIONS  
 % listpermutations(gaitCycle) lists all m unique cyclic and symmetric
 % permutations of the robot states in the n-vector gaitCycle as rows in an
@@ -9,6 +9,13 @@ function allPerms = listpermutations(gaitCycle, issymmetric)
 % symmetric permutations of the robot states in the n-vector gaitCycle as
 % rows in an m x n matrix. Symmetric permutations will be excluded if
 % issymmetric = false.
+%
+% [allPerms, nPerms] = listpermutations(gaitCycle) will also list the
+% total number nPerms of cyclic and symmetric permutations. 
+%
+% [~, nPerms] = listpermutations(gaitCycle) will only list the
+% total number nPerms of cyclic and symmetric permutations and will not
+% list all of the permutations
 %
 % Caitlin Freeman, Agile Robotics Lab (UA)
 % 1/27/22
@@ -52,4 +59,5 @@ function allPerms = listpermutations(gaitCycle, issymmetric)
     
     % Remove any repeated permutations
     allPerms = unique(allPerms, 'rows');
+    [nPerms, ~] = size(allPerms);
 end
