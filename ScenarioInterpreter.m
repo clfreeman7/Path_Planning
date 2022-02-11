@@ -185,19 +185,19 @@ classdef ScenarioInterpreter < handle
         %   Coventional spatial frame
         obstacle.pose_mm = obst_pose_mm;
         obstacle.pose_homog_mm = obst_pose_homog_mm;
-        obstacle.rect_mm.x = obst_xdim_mm;
-        obstacle.rect_mm.y = obst_ydim_mm;
-        obstacle.dilated_rect_mm.x = dilated_obst_xdim_mm;
-        obstacle.dilated_rect_mm.y = dilated_obst_ydim_mm;
+        obstacle.rect_dims_mm.x = obst_xdim_mm;
+        obstacle.rect_dims_mm.y = obst_ydim_mm;
+        obstacle.dilated_rect_dims_mm.x = dilated_obst_xdim_mm;
+        obstacle.dilated_rect_dims_mm.y = dilated_obst_ydim_mm;
         %   Image frame
         obstacle.pose_px = obst_pose_px;
         obstacle.pose_homog_px = [ cos(obst_pose_px(3)), -sin(obst_pose_px(3)), obst_pose_px(1) ; ...
                                     sin(obst_pose_px(3)), cos(obst_pose_px(3)), obst_pose_px(2) ; ...
                                     0, 0, 1 ];
-        obstacle.rect_px.x = obst_xdim_px;
-        obstacle.rect_px.y = obst_ydim_px;
-        obstacle.dilated_rect_px.x = dilated_obst_xdim_mm/PX2MM;
-        obstacle.dilated_rect_px.y = dilated_obst_ydim_mm/PX2MM;
+        obstacle.rect_dims_px.x = obst_xdim_px;
+        obstacle.rect_dims_px.y = obst_ydim_px;
+        obstacle.dilated_rect_dims_px.x = dilated_obst_xdim_mm/PX2MM;
+        obstacle.dilated_rect_dims_px.y = dilated_obst_ydim_mm/PX2MM;
 
         obstacle_scenario.obstacles{ii} = obstacle;
       end
@@ -237,18 +237,18 @@ classdef ScenarioInterpreter < handle
           g_obst_pose_homog_mm = obstacle.pose_homog_mm;
           d_obst_mm = g_obst_pose_homog_mm(1:2, 3);
           R_obst_mm = g_obst_pose_homog_mm(1:2, 1:2);
-          obst_xdim_mm = obstacle.rect_mm.x;
-          obst_ydim_mm = obstacle.rect_mm.y;
-          dilated_obst_xdim_mm = obstacle.dilated_rect_mm.x;
-          dilated_obst_ydim_mm = obstacle.dilated_rect_mm.y;
+          obst_xdim_mm = obstacle.rect_dims_mm.x;
+          obst_ydim_mm = obstacle.rect_dims_mm.y;
+          dilated_obst_xdim_mm = obstacle.dilated_rect_dims_mm.x;
+          dilated_obst_ydim_mm = obstacle.dilated_rect_dims_mm.y;
   
           g_obst_pose_homog_px = obstacle.pose_homog_px;
           d_obst_px = g_obst_pose_homog_px(1:2, 3);
           R_obst_px = g_obst_pose_homog_px(1:2, 1:2);
-          obst_xdim_px = obstacle.rect_px.x;
-          obst_ydim_px = obstacle.rect_px.y;
-          dilated_obst_xdim_px = obstacle.dilated_rect_px.x;
-          dilated_obst_ydim_px = obstacle.dilated_rect_px.y;
+          obst_xdim_px = obstacle.rect_dims_px.x;
+          obst_ydim_px = obstacle.rect_dims_px.y;
+          dilated_obst_xdim_px = obstacle.dilated_rect_dims_px.x;
+          dilated_obst_ydim_px = obstacle.dilated_rect_dims_px.y;
           
           if ( a_plot_img_space )
             % Plot obstacle frames
