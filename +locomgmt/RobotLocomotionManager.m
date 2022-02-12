@@ -13,11 +13,7 @@
 %
 %
 %  ============================= RobotLocomotionManager =================
-classdef RobotLocomotionManager < handle
-  properties (Constant)
-    
-  end
-  
+classdef RobotLocomotionManager < handle  
   properties  (Access = public)
     % Scenario properties
     goal_pos;           % robot goal position (currently unused)

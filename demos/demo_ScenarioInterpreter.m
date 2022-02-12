@@ -1,6 +1,12 @@
 % 
 % Script: demo_ScenarioInterpreter.m
 % 
+% Dependencies: 
+%   ScenarioInterpreter
+% 
+% Description: 
+%   Obstacle poses and geometries are estimated from a (overhead) binary 
+%   image of a locomotion scenario.
 % 
 % 
 

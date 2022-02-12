@@ -15,10 +15,6 @@
 %
 %  ====================== ScenarioInterpreter ========================
 classdef ScenarioInterpreter < handle
-  properties (Constant)
-    
-  end
-  
   properties  (Access = public)
     % Scenario properties
 
@@ -307,12 +303,6 @@ classdef ScenarioInterpreter < handle
         xticks(x_lims_mm); yticks(y_lims_mm);
         xticklabels(x_lims_mm/1000); yticklabels(fliplr(y_lims_mm)/1000);
       end
-    end
-
-    % Retrieve & compute current timestamp
-    function [ cur_time_sec ] = get_cur_time( this )
-      cur_time = datevec(now);
-      cur_time_sec = cur_time(4)*3600 + cur_time(5)*60 + cur_time(6);
     end
     
     % Set parameter value for class-instance, based on user specified 

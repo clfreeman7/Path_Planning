@@ -1,9 +1,16 @@
-% Demonstrate basic high-level flow of logic when managing robot trajectory
-% execution.
 %
-% Pre-requisite(s): 
-%   TBD
+% Script: demo_RobotLocomotionManager.m
+%
+% Dependencies: 
+%   +locomgmt.RobotLocomotionManager_Impl
+%   +locomgmt.RobotLocomotionManager
+%
+% Description: 
+%   Demonstrate basic high-level flow of logic when managing robot 
+%   trajectory execution.
+%
 %   
+
 
 % [0] == Script setup
 % Add dependencies to classpath
@@ -22,7 +29,7 @@ set(groot, 'defaultTextInterpreter','latex');
 % Control of Wedged sidewinding gait
 locom_mgr_params.robo_pose_update_period = 1;   % sec. (periodicity at which to retrieve updated robot pose)
 locom_mgr_params.cntrl_update_period = 5;       % sec. (periodicity at which to compute update control)
-locom_mgr = robomgmt.RobotLocomotionManager_Impl( locom_mgr_params );
+locom_mgr = locomgmt.RobotLocomotionManager_Impl( locom_mgr_params );
 
 % Set logging parameters & logging level
 logging_params.logging_level = 3;

@@ -13,11 +13,7 @@
 %
 %
 %  ============================= RobotLocomotionManager_Impl =================
-classdef RobotLocomotionManager_Impl < robomgmt.RobotLocomotionManager
-  properties (Constant)
-    
-  end
-  
+classdef RobotLocomotionManager_Impl < locomgmt.RobotLocomotionManager
   properties  (Access = public)
     % Subclass-specific properties
 
@@ -30,7 +26,7 @@ classdef RobotLocomotionManager_Impl < robomgmt.RobotLocomotionManager
         params = [];
       end
       
-      this@robomgmt.RobotLocomotionManager( params );    % super class constructor
+      this@locomgmt.RobotLocomotionManager( params );    % super class constructor
 
       % == Set input parameters
       % this.set_property(params, 'subclass_specific_param', 0.25);
