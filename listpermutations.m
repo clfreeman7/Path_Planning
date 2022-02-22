@@ -8,7 +8,7 @@ function [allPerms, nPerms] = listpermutations(gaitCycle, issymmetric)
 % listpermutations(gaitCycle, issymmetric) lists all m uniquen cyclic and
 % symmetric permutations of the robot states in the n-vector gaitCycle as
 % rows in an m x n matrix. Symmetric permutations will be excluded if
-% issymmetric = false.
+% issymmetric = false.w
 %
 % [allPerms, nPerms] = listpermutations(gaitCycle) will also list the
 % total number nPerms of cyclic and symmetric permutations. 
