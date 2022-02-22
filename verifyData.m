@@ -1,8 +1,8 @@
 close all; clc; clear;
 
-load 'demos/data/visualtracking/Euler 1.mat'
+load 'Euler 1.mat'
 
-% vidObj = VideoReader('Euler 1.mp4');
+vidObj = VideoReader('Euler 1.mp4');
 
 
 
