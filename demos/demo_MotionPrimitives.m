@@ -7,11 +7,11 @@
 %   
 
 
+clear; clc; close all
 % [0] == Script setup
 % Add dependencies to classpath
 addpath('./');
-clear; clc; close all
-
+load('data/visualtracking/stateOrder')
 
 % Configure figure tex interpreters
 set(groot, 'defaultAxesTickLabelInterpreter','latex');
