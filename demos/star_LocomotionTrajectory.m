@@ -23,6 +23,22 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 
 
+world = 5;
+switch world
+    case 1 %orange
+        this = importdata('w1path.mat');
+    case 2 %black
+        this = importdata('w2path.mat');
+    case 3 %blue
+        this = importdata('w3path.mat');
+    case 4 %brown
+        this = importdata('w4path.mat');
+    case 5
+        %nothing
+        this = importdata('w5path.mat');
+end
+
+
 % [1] == Create a LocomotionTrajectory() object
 % Define a 9-pose trajectory
 %   Note: this trajectory data is arbitrarily generated; it does not
