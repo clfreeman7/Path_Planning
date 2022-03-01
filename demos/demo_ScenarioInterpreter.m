@@ -25,9 +25,9 @@ scenario_params.obstacle_dilation = 150;    % mm
 img_preprocess_params.bwareaopen_size = 450;      % blobs less than this # px are removed
 img_preprocess_params.strel_disk_size = 10;       % close holes using disc size
 
-img_preprocess_params.region_ignore = [350, 1080, 1850:1920];  % image exclusion region -> 
-                                                        % rectangle: 
-                                                        %   [row start, row end, column start, column end]
+img_preprocess_params.region_ignore = [350, 1080, 1850:1920];   % image exclusion region -> 
+                                                                %   rectangle: 
+                                                                %     [row start, row end, column start, column end]
 
 
 % [1] == Script setup
