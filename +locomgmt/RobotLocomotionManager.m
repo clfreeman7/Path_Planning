@@ -28,7 +28,7 @@ classdef RobotLocomotionManager < handle
     robo_pose;            % robot pose
         
     % Timer/thread periodicities & timing
-    cntrl_update_period;
+    robo_cntrl_update_period;
     robo_pose_update_period;
     
     % Timestamps
@@ -53,7 +53,7 @@ classdef RobotLocomotionManager < handle
       
       % == Set input parameters
       this.set_property(params, 'robo_pose_update_period', 0.25);  % sec.
-      this.set_property(params, 'cntrl_update_period', 0.5);  % sec.
+      this.set_property(params, 'robo_cntrl_update_period', 0.5);  % sec.
 
       % == Internal state      
       %   Path/Trajectory Planning
@@ -87,34 +87,27 @@ classdef RobotLocomotionManager < handle
   end     % methods
 
   methods (Abstract)
-    % Main class loop facilitating indefinite closed-loop control of robot
+    % Main method (manage indefinite robot control & execution)
     start( this )
 
-    set_cntrl_params( this )
-    
-    set_goal_position( this )
-    
-    set_logging_level( this )
+    % Periodic methods
+    update_robo_pose( this )  % update current robot pose
+    update_robo_cntrl( this ) % generate updated control command(s)
+    send_cntrl( this )        % send control command(s) to robot
+    goal_reached( this )      % evaluate whether goal reached
 
-    update_robo_pose( this )
+    % Start-up/initialize/shutdown (methods designed for one-time execution)
+    initialize( this )          % initialization procedures (specific to either the class instance or robot)
+    init_logging( this )              % setup related to data recording or visualization
+    shutdown( this )            % shutdown procedures (specific to either the class instance or robot)
+    save_scenario_results( this )       % export/save run data (e.g. .mat archive)
+    generate_trajectory_plan( this )  % generate robot trajectory
 
-    goal_reached( this )
-
-    initialize_robot( this )
-
-    shutdown_robot( this )
-    
-    init_logging( this )
-
-    compute_cntrl( this )
-
-    send_cntrl( this )
-
-    generate_trajectory_plan( this )
-        
-    set_gait_dynamics( this )
-    
-    save_scenario_state( this )
+    % Setters
+    set_cntrl_params( this )    % set control parameters
+    set_goal( this )            % set locomotion goal (pose)
+    set_logging_level( this )   % set logging verbosity
+    set_gait_dynamics( this )   % set gait data
 
   end     % methods (Abstract)
 end     % class

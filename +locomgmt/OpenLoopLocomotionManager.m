@@ -1,9 +1,9 @@
-%============================= RobotLocomotionManager_Impl =================
+%============================= OpenLoopLocomotionManager =================
 %
-%  Implementation of abstract RobotLocomotionManager class, for 
-%  demonstration purposes.
+%  Implementation of abstract RobotLocomotionManager class, for open-loop 
+%   trajectory execution/management.
 %
-%  RobotLocomotionManager_Impl()
+%  OpenLoopLocomotionManager()
 %
 %  INPUTS:
 %    TBD
@@ -12,8 +12,8 @@
 %  OUTPUTS:
 %
 %
-%  ============================= RobotLocomotionManager_Impl =================
-classdef RobotLocomotionManager_Impl < locomgmt.RobotLocomotionManager
+%  ============================= OpenLoopLocomotionManager =================
+classdef OpenLoopLocomotionManager < locomgmt.RobotLocomotionManager
   properties  (Access = public)
     % Subclass-specific properties
 
@@ -21,7 +21,7 @@ classdef RobotLocomotionManager_Impl < locomgmt.RobotLocomotionManager
   
   methods
     % Constructor
-    function this = RobotLocomotionManager_Impl( params )
+    function this = OpenLoopLocomotionManager( params )
       if ( nargin < 1 )
         params = [];
       end
@@ -36,19 +36,19 @@ classdef RobotLocomotionManager_Impl < locomgmt.RobotLocomotionManager
     % Main loop managing indefinite locomotion control of robot
     % NOTE(s): Overload this method, in a sub-class, if need different implementation
     function start( this )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::start()] Entering main polling loop!\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::start()] Entering main polling loop!\n', ...
                 this.get_cur_time());
       
       
-      % [0] == Any initialization procedures needed priorto polling start
-      this.poll_start_timestamp = this.get_cur_time();
-      
-      this.initialize();          % pre-scenario robot initialization procedures
+      % [0] == Any initialization procedures needed priorto polling start      
+      this.initialize();                % pre-scenario robot initialization procedures
       this.update_robo_pose();          % get initial robot pose
       this.generate_trajectory_plan();  % plan trajectory & control
 
 
       % [1] == Main polling loop
+      this.poll_start_timestamp = this.get_cur_time();
+
       while( ~this.goal_reached() )
         cur_time = this.get_cur_time();
         
@@ -75,10 +75,10 @@ classdef RobotLocomotionManager_Impl < locomgmt.RobotLocomotionManager
       
 
       % [2] == Clean-up (scenario complete)
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::poll()] Locomotion control completed.\n', this.get_cur_time());
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::poll()] Locomotion control completed.\n', this.get_cur_time());
       this.shutdown();  % robot clean-up procedures
       
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::poll()] Exiting.\n', this.get_cur_time());
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::poll()] Exiting.\n', this.get_cur_time());
       
       this.save_scenario_results();
     end
@@ -89,27 +89,22 @@ classdef RobotLocomotionManager_Impl < locomgmt.RobotLocomotionManager
     % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     function update_robo_pose( this )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::update_robo_pose()] Retrieve updated robot pose.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::update_robo_pose()] Retrieve updated robot pose.\n', ...
                 this.get_cur_time());
+
+      % TODO: not needed for open-loop??
     end
 
     function [ robo_cntrl ] = update_robo_cntrl( this )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::update_robo_cntrl()] Compute updated control.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::update_robo_cntrl()] Compute updated control.\n', ...
                 this.get_cur_time());
 
       robo_cntrl = [];
     end
 
     function send_cntrl( this, a_robo_cntrl )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::send_cntrl()] Command updated control.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::send_cntrl()] Command updated control.\n', ...
                 this.get_cur_time());
-    end
-
-    function [ result ] = goal_reached( this )
-%       fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::goal_reached()] Check whether goal reached.\n', ...
-%                 this.get_cur_time());
-
-      result = false;
     end
 
 
@@ -119,29 +114,40 @@ classdef RobotLocomotionManager_Impl < locomgmt.RobotLocomotionManager
     % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     function initialize( this )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::initialize()] Command initial robot configuration.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::initialize()] Command initial robot configuration.\n', ...
                 this.get_cur_time());
+
+      % TODO: 
+      %   Initialize logging
+      %   MSoRo API init
     end
 
     function init_logging( this, a_logging_params )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::init_logging()] Setup visualization aids (e.g. plots) and data recording.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::init_logging()] Setup visualization aids (e.g. plots) and data recording.\n', ...
                 this.get_cur_time());
+
+      % TODO:
+      %   Set-up data recording variables/structure
+      %   Set-up visualization (e.g. plots and handles)
     end
 
     function shutdown( this )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::shutdown()] Perform any final robot commands prior to terminating scenario.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::shutdown()] Perform any final robot commands prior to terminating scenario.\n', ...
                 this.get_cur_time());
     end
 
     function save_scenario_results( this )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::save_scenario_results()] Save scenario state to .mat file.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::save_scenario_results()] Save scenario state to .mat file.\n', ...
                 this.get_cur_time());
     end
     
     % Path/trajectory planning
-    function generate_trajectory_plan( this )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::generate_trajectory_plan()] Generate trajectory plan.\n', ...
-                this.get_cur_time());
+    function generate_trajectory_plan( this, a_start_pose, a_goal_pos )
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::generate_trajectory_plan()] Generate trajectory plan from start pose (%.2f, %.2f, %.2f) to goal position (%.2f, %.2f).\n', ...
+                this.get_cur_time(), a_start_pose(1), a_start_pose(2), a_start_pose(3), a_goal_pos(1), a_goal_pos(2));
+
+      % TODO: load scenario from file (class input) and generate trajectory
+      %         between (user input) start pose and goal position
     end
 
 
@@ -150,23 +156,27 @@ classdef RobotLocomotionManager_Impl < locomgmt.RobotLocomotionManager
     % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     function set_cntrl_params( this, a_cntrl_params )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::set_clcntrl_params()] Set control parameters.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::set_clcntrl_params()] Set control parameters.\n', ...
                 this.get_cur_time());
     end
     
     function set_goal( this, a_goal_pos )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::set_goal()] Set goal position.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::set_goal()] Set goal position.\n', ...
                 this.get_cur_time());
+
+      this.goal_pos = a_goal_pos;
     end
     
     function set_logging_level( this, a_logging_level )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::set_logging_level()] Set logging level.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::set_logging_level()] Set logging level.\n', ...
                 this.get_cur_time());
+
+      this.logging_params.logging_level = a_logging_level;
     end
      
     % Robot locomotive dynamic/kinematic models
     function set_gait_dynamics( this, a_gait_motion_models )
-      fprintf('[%.2f sec.] [RobotLocomotionManager_Impl::set_gait_dynamics()] Set gait motion models.\n', ...
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::set_gait_dynamics()] Set gait motion models.\n', ...
                 this.get_cur_time());
     end
 
