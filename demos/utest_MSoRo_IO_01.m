@@ -36,7 +36,7 @@ set(groot, 'defaultTextInterpreter','latex');
 
 
 % [2] == Instantiate and exercise API methods
-msoro_robo = MSoRo_IO();
+msoro_robo = msoro.api.MSoRo_IO();
 
 % Open serial port
 msoro_robo.connect(port, baud, timeout);
@@ -61,5 +61,7 @@ pause(1);
 
 msoro_robo.connect(port, baud, timeout);
 fprintf('[Unit Test] Serial port re-connected.\n');
+pause(1);
 
-
+msoro_robo.disconnect();
+fprintf('[Unit Test] Serial port disconnected.\n');

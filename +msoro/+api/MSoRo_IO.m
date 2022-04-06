@@ -50,7 +50,7 @@ classdef MSoRo_IO < handle
     %   a_timeout:      [optional] timeout duration in sec. (e.g. 30)
     % 
     function connect( this, a_port, a_baud, a_timeout )
-      assert( this.ser_device_open, ...
+      assert( ~this.ser_device_open, ...
               '[MSoRo_IO::connect()] A port is already open. Disconnect before establishing a new connection.');       % check serial port opened
 
       if ( nargin < 4 )
@@ -97,7 +97,7 @@ classdef MSoRo_IO < handle
     %                         sequence in a_transition_seq
     %
     function define_gait( this, a_transition_seq, a_gait_names )
-      assert( strcmp(a_transition_seq, 'cell'), ...
+      assert( strcmp(class(a_transition_seq), 'cell'), ...
               '[MSoRo_IO::define_gait()] Input must be cell array of vectors.');  % check input data format
       assert( this.ser_device_open, ...
               '[MSoRo_IO::define_gait()] No serial port opened.');                % check serial port opened
