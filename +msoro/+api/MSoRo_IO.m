@@ -47,8 +47,8 @@ classdef MSoRo_IO < handle
     % Input(s):
     %   a_port:         port ID (e.g. "COM6")
     %   a_baud:         baud rate (e.g. 9600)
-    %   a_timeout:         [optional] timeout duration in sec. (e.g. 30)
-    %
+    %   a_timeout:      [optional] timeout duration in sec. (e.g. 30)
+    % 
     function connect( this, a_port, a_baud, a_timeout )
       assert( this.ser_device_open, ...
               '[MSoRo_IO::connect()] A port is already open. Disconnect before establishing a new connection.');       % check serial port opened
@@ -141,10 +141,10 @@ classdef MSoRo_IO < handle
     %
     % Input(s):
     %   src:        serial device handle
-    %   evnt:       (not used) triggering event data
-    %
-    function msoro_serial_cb( this, src, ~)
-%       data = readline(src);
+    %   evnt:       (~, not used) triggering event data
+    % 
+    function msoro_serial_cb( this, src, ~ )
+%      data = readline(src);
       % TODO: how process readline data from Arduino?
     end
 
