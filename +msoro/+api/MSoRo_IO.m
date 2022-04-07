@@ -8,14 +8,13 @@
 %    TBD
 %
 %
-%  OUTPUTS:
-%
-%
 %  ============================= MSoRo_IO =================
 classdef MSoRo_IO < handle
   properties  (Access = public)
     serial_props;
 
+    serial_data_rcvd;     % boolean flag indicating receipt of data (set by default serial callback handler)
+    serial_data;          % cell array of received serial data (set by default serial callback handler)
   end
 
   properties  (Access = private)
@@ -40,6 +39,9 @@ classdef MSoRo_IO < handle
       this.serial_props.port = [];
       this.serial_props.baud = [];
       this.serial_props.timeout = [];
+
+      this.serial_data_rcvd = false;
+      this.serial_data = {};
     end
 
     % Open serial connection (to MSoRo)
@@ -48,11 +50,18 @@ classdef MSoRo_IO < handle
     %   a_port:         port ID (e.g. "COM6")
     %   a_baud:         baud rate (e.g. 9600)
     %   a_timeout:      [optional] timeout duration in sec. (e.g. 30)
+    %   a_cb_hdl:       [optional] user-specified callback handler for serial receipt events
     % 
-    function connect( this, a_port, a_baud, a_timeout )
+    function connect( this, a_port, a_baud, a_timeout, a_cb_hdl )
       assert( ~this.ser_device_open, ...
               '[MSoRo_IO::connect()] A port is already open. Disconnect before establishing a new connection.');       % check serial port opened
 
+      if ( nargin < 5 )
+        reg_custom_cb = false;
+      else
+        reg_custom_cb = true;        
+      end
+      
       if ( nargin < 4 )
         a_timeout = 30;   % sec.
       end
@@ -67,7 +76,11 @@ classdef MSoRo_IO < handle
         flush(this.ser_device);
         this.ser_device_open = true;
 
-        configureCallback(this.ser_device, "terminator", @this.msoro_serial_cb);    % register serial comm. callback handler
+        if ( reg_custom_cb )
+          configureCallback(this.ser_device, "terminator", a_cb_hdl);                 % register user-specified serial comm. callback handler
+        else
+          configureCallback(this.ser_device, "terminator", @this.msoro_serial_cb);    % register serial comm. callback handler
+        end
       else
         warning('[MSoRo_IO::connect()] Failed to open serial port.');
       end
@@ -137,14 +150,19 @@ classdef MSoRo_IO < handle
       writeline(this.ser_device, gait_cmd);
     end
 
-    % MSoRo serial callback (Arduino -> Matlab communication)
+    % (Default) MSoRo serial callback handler (Arduino -> Matlab communication)
     %
     % Input(s):
     %   src:        serial device handle
     %   evnt:       (~, not used) triggering event data
     % 
     function msoro_serial_cb( this, src, ~ )
-%      data = readline(src);
+      data = readline(src);
+
+      this.serial_data_rcvd = true;
+      this.serial_data{end+1} = data;
+      fprintf('[MSoRo_IO::msoro_serial_cb()] Data recieved: %s\n', this.serial_data);
+
       % TODO: how process readline data from Arduino?
     end
 

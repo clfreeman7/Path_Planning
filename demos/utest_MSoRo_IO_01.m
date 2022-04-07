@@ -5,8 +5,11 @@
 %   +msoro.api.MSoRo_IO
 %
 % Description: 
-%   Unit test of MSoRo Matlab-Arduino API:
-%     msoro.api.MSoRo_IO 
+%   Unit test of MSoRo Matlab-Arduino API: msoro.api.MSoRo_IO 
+% 
+%   Connect dead-end USB-to-serial adapter and verify all functions run to
+%   completion without errors. Part of unit testing in absence of any MSoRo
+%   robot to actually connect to.
 % 
 % Prerequisites:
 %   Connect USB-to-serial adapter (dummy device)
@@ -40,28 +43,28 @@ msoro_robo = msoro.api.MSoRo_IO();
 
 % Open serial port
 msoro_robo.connect(port, baud, timeout);
-fprintf('[Unit Test] Serial port opened!\n');
+fprintf('[Unit Test] Serial port opened!\n\n');
 pause(1);
 
 % Exercise 'define' operation (send over dead-end serial port)
 msoro_robo.define_gait(gait_trans_seq, gait_names);
-fprintf('[Unit Test] MSoRo DEFINE operation sent over serial.\n');
+fprintf('[Unit Test] MSoRo DEFINE operation sent over serial.\n\n');
 pause(1);
 
 % Exercise 'start' operation (send over dead-end serial port)
 msoro_robo.start_gait(gait_names{1}, num_gait_cycles);
-fprintf('[Unit Test] MSoRo START operation sent over serial.\n');
+fprintf('[Unit Test] MSoRo START operation sent over serial.\n\n');
 pause(1);
 
 
 % [3] == Test disconnect->reconnect runs smoothly
 msoro_robo.disconnect();
-fprintf('[Unit Test] Serial port disconnected.\n');
+fprintf('[Unit Test] Serial port disconnected.\n\n');
 pause(1);
 
 msoro_robo.connect(port, baud, timeout);
-fprintf('[Unit Test] Serial port re-connected.\n');
+fprintf('[Unit Test] Serial port re-connected.\n\n');
 pause(1);
 
 msoro_robo.disconnect();
-fprintf('[Unit Test] Serial port disconnected.\n');
+fprintf('[Unit Test] Serial port disconnected.\n\n');
