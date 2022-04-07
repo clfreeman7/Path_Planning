@@ -8,10 +8,6 @@
 %  INPUTS:
 %    TBD
 %
-%
-%  OUTPUTS:
-%
-%
 %  ============================= OpenLoopLocomotionManager =================
 classdef OpenLoopLocomotionManager < locomgmt.RobotLocomotionManager
   properties  (Access = public)
@@ -35,15 +31,28 @@ classdef OpenLoopLocomotionManager < locomgmt.RobotLocomotionManager
     
     % Main loop managing indefinite locomotion control of robot
     % NOTE(s): Overload this method, in a sub-class, if need different implementation
-    function start( this )
-      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::start()] Entering main polling loop!\n', ...
+    function start( this, a_robo_traj )
+      assert( isa(a_robo_traj, 'locomgmt.locotraj.LocomotionTrajectory'), ...
+              '[OpenLoopLocomotionManager::start()] Input trajectory plan  must be of type: locomgmt.locotraj.LocomotionTrajectory\n' );
+
+      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::start()] Beginning trajecory execution ...\n', ...
                 this.get_cur_time());
       
-      
+      % TODO:
+% robo_traj_plan = 
+% 
+%   LocomotionTrajectory with properties:
+% 
+%          timestamps: [0 2 34 34 67 71 101 104 120 124 149 154 174 175 194 194 218 219 238 243 254 257 280 283 320 320]
+%               poses: [3×25 double]
+%               gaits: ["ROTATE"    "TRANSLATE"    "ROTATE"    "TRANSLATE"    "ROTATE"    "TRANSLATE"    "ROTATE"    "TRANSLATE"    "ROTATE"    "TRANSLATE"    "ROTATE"    "TRANSLATE"    "ROTATE"    "TRANSLATE"    "ROTATE"    …    ]
+%      gait_durations: [2 32 0 33 4 30 3 16 4 25 5 20 1 19 0 24 1 19 5 11 3 23 3 37 0]
+%     gait_directions: ["CCW"    "SW"    "CW"    "SE"    "CW"    "SE"    "CCW"    "SE"    "CW"    "SE"    "CCW"    "SE"    "CCW"    "NE"    "CW"    "NW"    "CCW"    "SW"    "CCW"    "SW"    "CCW"    "SW"    "CW"    "SW"    ""]
+
+
       % [0] == Any initialization procedures needed priorto polling start      
       this.initialize();                % pre-scenario robot initialization procedures
       this.update_robo_pose();          % get initial robot pose
-      this.generate_trajectory_plan();  % plan trajectory & control
 
 
       % [1] == Main polling loop
@@ -141,15 +150,6 @@ classdef OpenLoopLocomotionManager < locomgmt.RobotLocomotionManager
                 this.get_cur_time());
     end
     
-    % Path/trajectory planning
-    function generate_trajectory_plan( this, a_start_pose, a_goal_pos )
-      fprintf('[%.2f sec.] [OpenLoopLocomotionManager::generate_trajectory_plan()] Generate trajectory plan from start pose (%.2f, %.2f, %.2f) to goal position (%.2f, %.2f).\n', ...
-                this.get_cur_time(), a_start_pose(1), a_start_pose(2), a_start_pose(3), a_goal_pos(1), a_goal_pos(2));
-
-      % TODO: load scenario from file (class input) and generate trajectory
-      %         between (user input) start pose and goal position
-    end
-
 
     % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Setters
