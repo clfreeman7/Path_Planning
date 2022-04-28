@@ -12,7 +12,11 @@
 classdef ExperimentalData < handle
     properties (Access = public)
       % Experimental Setup
-      framerate = 30;       % frames per second for visual tracking
+      robot_name;      % label for robot (either blue or orange)  
+      
+      substrate;       % name for locomotion surface (e.g., black mat)
+      
+      framerate;       % frames per second for visual tracking
       
       pixel_length;    % cm per pixel 
       
@@ -38,7 +42,9 @@ classdef ExperimentalData < handle
       frame_1;         % frame at which motion 
       timestamp_1;     % timestamp at which motion starts
       
-      % Processed Experimental Data
+      R_1;             % initial rotation matrix compared to trial 1
+      
+      % Processed Experimental Data `   
       
       % Rotation matrix and translation vector w.r.t. the global initial
       % frame.
@@ -57,12 +63,15 @@ classdef ExperimentalData < handle
             end
             
             % Set default/ input values for experimental setup.
+            this.set_property(params, 'robot_name', 'undefined');
+            this.set_property(params, 'substrate', 'undefined');
             this.set_property(params, 'framerate', 30);      % frames/sec
-            this.set_property(params, 'pixel_length', .2426);  % cm 
+            this.set_property(params, 'pixel_length', .2426);  % cm/pixel
             this.set_property(params, 'n_markers', 8);
             this.set_property(params, 'transition_time', .45); % sec   
             this.set_property(params, 'marker_order', 1:this.n_markers);
             this.set_property(params, 'frame_1', 1);
+            this.set_property(params, 'R_1', eye(3));
             
             % Extract marker positions from raw data.
             this.marker_x_pos = raw_data(:, 1:3:22);
@@ -101,25 +110,28 @@ classdef ExperimentalData < handle
                 % Rotation matrices and translation vectors have already
                 % been calculated and stored in raw data file. Extract:
                 this.rotm_global(:, :, i) = reshape(raw_data(i, 37:45), [3,3]);
+                % Multiply by initial rotation matrix:
+                this.rotm_global(:, :, i) = this.R_1' * this.rotm_global(:, :, i);
                 this.t_global(:, i) = raw_data(i, 46:48)';
                 % Use these to calculate the pose of the robot center.
                 if i == 1
-                    pos_global = [mean(this.marker_x_pos(1, :)); 
-                                  mean(this.marker_y_pos(1,:));
-                                  mean(this.marker_z_pos(1,:))];
+                    pos_global(:, i) = [mean(this.marker_x_pos(1, :)); 
+                                       mean(this.marker_y_pos(1,:));
+                                       mean(this.marker_z_pos(1,:))];
                 else
-                    pos_global = this.rotm_global(:, :, i)*pos_global + ...
+                    pos_global(:, i) = this.rotm_global(:, :, i)*pos_global(:, 1) + ...
                                  this.t_global(:, i);
                 end
                 % Use built-in MATLAB command to convert rotation matrix
                 % to Euler angles.
                 eul_angles = rotm2eul(this.rotm_global(:, :, i));
-                this.poses(:, i) = [pos_global(1);      % x position in GCS
-                                    pos_global(2);      % y position in GCS
+                this.poses(:, i) = [pos_global(1, i);      % x position in GCS
+                                    pos_global(2, i);      % y position in GCS
                                     eul_angles(1)];      % heading / yaw
             end
             % Convert from pixels to cm. 
-            this.poses = this.poses * this.pixel_length;
+            this.poses(1:2, :) = this.poses(1:2, :) * this.pixel_length;
+            this.t_global = this.t_global * this.pixel_length;
         end
     end
 end
