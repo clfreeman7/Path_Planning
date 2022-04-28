@@ -16,4 +16,9 @@ This ExperimentalData subclass is used for processing sequentially repeated gait
 _(future implementation)_ This ExperimentalData subclass is used for processing open-loop gait-switching sequences. 
 - **GaitSynthesizer**
 This handle class is used to syntehsize (generate) gaits by incorporating the motion primitive data. A demo is shown in [demo_GaitSynthesizer.m](/demos/demo_GaitSynthesizer.m).
-
+- **OldGaitTest**
+_(future implementation)_
+- **GaitPredict**
+_(future implementation)_
+- **Gait** 
+This handle class is used to instantiate gait objects to form a gait library /database using one of three inputs: (1) a GaitTest() object which analyzes the data from visual tracking, (2) an OldGaitTest() object which analyses the data from manual visual tracking , or (3) a GaitPredict() object which uses motion primitive data to predict the behavior of gaits before testing them.
