@@ -6,18 +6,14 @@ The gait library (an array of Gait() objects that details each gait's change in 
 
 ![Diagram](https://github.com/clfreeman7/IROS2022/blob/main/IROS%202022%20%20(1).png)
 
-**ExperimentalData**
+-**ExperimentalData**
 This superclass is used for generalized analysis of Arun's visual tracking data. 
-
-**PrimitivesTest**
+-**PrimitivesTest**
 This ExperimentalData subclass is used for processing motion primitive data resulting from having the robot execute Euler tours (exhaustive exploration). Demos can be found at https://github.com/clfreeman7/IROS2022/blob/main/demos/demo_PrimitivesTest.m and https://github.com/clfreeman7/IROS2022/blob/main/demos/demo2_PrimitivesTest.m .
-
-**GaitTest**
-This ExperimentalData subclass is used for processing sequentially repeated gaits, usually found via gait synthesis. The gaits are typically repeated for 30 cycles. A demo is shown in https://github.com/clfreeman7/IROS2022/blob/main/demos/demo_PrimitivesTest.m .
-
-**PathTest**
+-**GaitTest**
+This ExperimentalData subclass is used for processing sequentially repeated gaits, usually found via gait synthesis. The gaits are typically repeated for 30 cycles. A demo is shown in https://github.com/clfreeman7/IROS2022/blob/main/demos/demo_PrimitivesTest.m 
+-**PathTest**
 _(future implementation)_ This ExperimentalData subclass is used for processing open-loop gait-switching sequences. 
-
-**GaitSynthesizer**
+-**GaitSynthesizer**
 This handle class is used to syntehsize (generate) gaits by incorporating the motion primitive data. A demo is shown in https://github.com/clfreeman7/IROS2022/blob/main/demos/demo_GaitSynthesizer.m .
 
