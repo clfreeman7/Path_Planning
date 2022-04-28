@@ -9,7 +9,7 @@ The gait library (an array of Gait() objects that details each gait's change in 
 - **ExperimentalData**
 This superclass is used for generalized analysis of Arun's visual tracking data. 
 - **PrimitivesTest**
-This ExperimentalData subclass is used for processing motion primitive data resulting from having the robot execute Euler tours (exhaustive exploration). Demos can be found at /demos/demo_PrimitivesTest.m and https://github.com/clfreeman7/IROS2022/blob/main/demos/demo2_PrimitivesTest.m .
+This ExperimentalData subclass is used for processing motion primitive data resulting from having the robot execute Euler tours (exhaustive exploration). Demos can be found [here] (/demos/demo_PrimitivesTest.m) and https://github.com/clfreeman7/IROS2022/blob/main/demos/demo2_PrimitivesTest.m .
 - **GaitTest**
 This ExperimentalData subclass is used for processing sequentially repeated gaits, usually found via gait synthesis. The gaits are typically repeated for 30 cycles. A demo is shown in https://github.com/clfreeman7/IROS2022/blob/main/demos/demo_PrimitivesTest.m 
 - **PathTest**
