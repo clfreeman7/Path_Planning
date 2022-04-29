@@ -51,7 +51,7 @@ classdef Gait < handle
                            
       var_delta_poses;     % variance 
       
-      twists;              % [6 x n] body twists 
+      twists;              % [3 x n] body twists in SE(2)
       
       % Change in robot pose information w.r.t. local frame of tail state
       % for each Gait. 
@@ -64,7 +64,7 @@ classdef Gait < handle
       Twist;
     end 
     
-    methods
+    methods 
         % Constructor
         function this = Gait( gait_data_object,  params)
           if nargin < 2
@@ -95,12 +95,11 @@ classdef Gait < handle
           this.calculate_total_motion;
           
           % Convert change in robot pose to body twists. 
-%           for i = 1:this.len_gait
-%               this.twists(:, i) = this.delta_pose_2_twist(this.delta_poses(:, i));
-%           end
-%           this.Twist = this.delta_pose_2_twist(Delta_Pose);
-%           
-%         end
+          for i = 1:this.len_gait
+              this.twists(:, i) = this.delta_pose_2_twist(this.delta_poses(:, i), this.transition_time);
+          end
+          this.Twist = this.delta_pose_2_twist(this.Delta_Pose, this.transition_time);
+          
         end
     
         % Set parameter value for class-instance, based on user specified 
@@ -119,7 +118,7 @@ classdef Gait < handle
             pos = zeros(3,1);      % [x y theta]' at start
             pose = pos;
             R = eye(3);
-            for i = 1:length(this.len_gait)
+            for i = 1:this.len_gait
                 delta_x_local = this.delta_poses(1, i);
                 delta_y_local = this.delta_poses(2, i);
                 R_local = eul2rotm([this.delta_poses(3, i) 0 0]);
@@ -130,14 +129,10 @@ classdef Gait < handle
                 % Store global position data for verification.
                 pose(:, i+1) = pos;
             end
-            this.Delta_Pose = pose(:, end);
+            this.Delta_Pose = [pose(1:2, end); sum(this.delta_poses(3,:))];
         end
         
-        % Calculate the average body twist for each motion primitive or
-        % gait.
-%         function twist = delta_pose_2_twist(delta_pose)
-%             twist = 1;
-%         end
+
 
 
         function plot(this, n_cycles)
@@ -149,6 +144,8 @@ classdef Gait < handle
             pos = pose;
             R =  eul2rotm([pose(3,1) 0 0]);
             k=0;
+            % Find the poses using the delta_poses for each motion
+            % primitive. 
             for i = 1:n_cycles
                 for j = 1:this.len_gait
                     k = k+1;
@@ -163,7 +160,26 @@ classdef Gait < handle
                     pose(:, k+1) = pos;
                 end
             end
-
+            
+            % Check the math in the methods by using the Delta_Pose of
+            % the entire gait.
+            pos = zeros(3,1);
+            R = eye(3);
+            for i = 1:n_cycles
+                    delta_x_local = this.Delta_Pose(1);
+                    delta_y_local = this.Delta_Pose(2);
+                    R_local = eul2rotm([this.Delta_Pose(3) 0 0]);
+                    % Use body-frame transformation formula:
+                    pos = R*[delta_x_local; delta_y_local; 0] + pos;
+                    % Post-multiply for intrinsic rotations.
+                    R = R*R_local;
+                    % Store global position data for verification.
+                    Pose(:, i+1) = pos;
+            end
+            
+            % Check the math of the methods by using the Twist of
+            % the entire gait. 
+            
             hold on
             plot(pose(1,:), pose(2,:))
             xlabel('x (cm)')
@@ -175,10 +191,18 @@ classdef Gait < handle
             c2 = [0.6350 0.0780 0.1840];
 
             scatter(pose(1,:), pose(2,:), sz, c1, 'filled')
-            scatter(pose(1, :), pose(2, :),sz, c2)
+            scatter(Pose(1, :), Pose(2, :),sz, c2)
              axis equal
         end
         
     end  %methods
+    
+    methods (Static)
+        % Calculate the average body twist for each motion primitive or
+        % gait.
+        function twist = delta_pose_2_twist(delta_pose, delta_time)
+             twist = 1/delta_time*delta_pose;
+         end
+    end
 
 end  %class
