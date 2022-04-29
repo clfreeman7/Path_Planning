@@ -77,13 +77,13 @@ end
 figure(3)
 tiledlayout(1, 5)
 for i = 1:n_gaits
-    gait_library_2(i) = gaitdef.Gait(all_gaits(i), gait_exp_2(i).params)
+    gait_library_2(i) = gaitdef.Gait(all_gaits(i), gait_exp_2(i).params);
     nexttile;
     gait_library_2(i).plot(30)
 end
 
 
-
+gait_library_2
 
 
 
