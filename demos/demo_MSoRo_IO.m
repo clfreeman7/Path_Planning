@@ -22,6 +22,7 @@ n_gaits = length(gait_library_2);
 % Extract the motion data and gait names from the gait library
 gait_trans_seq = cell(1, n_gaits);
 gait_names = cell(1, n_gaits);
+
 for i = 1:n_gaits
     gait_trans_seq{i} = gait_library_2(i).robo_states;
     gait_names{i} = gait_library_2(i).gait_name;
@@ -29,3 +30,6 @@ end
 
 gait_trans_seq
 gait_names
+
+% [2] == Define the open-loop canned sequence to be run. 
+canned_sequence = 'A7B3D2C4E5';
