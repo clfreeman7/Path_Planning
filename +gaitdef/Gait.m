@@ -30,6 +30,8 @@ classdef Gait < handle
       
       
       % Gait information
+      gait_name;           % character (i.e., A, B, etc) name for the gait
+      
       robo_states;         % gait sequence
                            
       primitive_labels;    % sequence of robot motion primitive labels, 
@@ -70,7 +72,7 @@ classdef Gait < handle
           if nargin < 2
               params = [];
           end
-          
+          this.set_property(params, 'gait_name', 'undefined');  
           this.set_property(params, 'robot_name', 'undefined');             
           this.set_property(params, 'transition_time', .45);  % s    
           this.set_property(params, 'substrate', 'mat');  % s         
