@@ -110,28 +110,16 @@ classdef MSoRo_IO < handle
     %                         sequence in a_transition_seq
     %
     function define_gait( this, a_transition_seq, a_gait_names )
-      assert( iscell(a_transition_seq), ...
+      assert( strcmp(class(a_transition_seq), 'cell'), ...
               '[MSoRo_IO::define_gait()] Input must be cell array of vectors.');  % check input data format
       assert( this.ser_device_open, ...
               '[MSoRo_IO::define_gait()] No serial port opened.');                % check serial port opened
 
-%       for ii = 1:length(a_transition_seq)
-%         gait = a_transition_seq{ii};
-%         seq_len_str = int2str( length(gait) );
-% 
-%         write(this.ser_device, 'define', "string");      % MSoRo operation
-%         write(this.ser_device, seq_len_str, "string");   % length of transition sequence
-%         write(this.ser_device, gait, "int8");            % transition sequence
-%       end
-
-
-      % [TEMPORARY] implementation just to validate Matlab MSoRo interface
-      gait = a_transition_seq{1};     % array of integers
-      seq_len_str = int2str( length(gait) );
-      write(this.ser_device,'define',"string");
-      write(this.ser_device,seq_len_str,"string");
-      for ii = 1:length(gait)
-        write(this.ser_device,gait(ii),"int8");
+      for ii = 1:length(a_transition_seq)
+        gait_def = sprintf('%s%s%s',sprintf('define %s',a_gait_names{ii}),...
+            sprintf('%3d',a_transition_seq{ii}),sprintf(' end '))
+        keyboard
+        write(this.ser_device,gait_def,"string");
       end
 
       % TODO: store gait internally?
@@ -154,17 +142,24 @@ classdef MSoRo_IO < handle
       end
 
       % TODO: map internal gait name from a_gait_name?
-%       gait_cmd = sprintf('%s%d', a_gait_name, a_num_cycles);
-% 
-%       write(this.ser_device,'start',"string");
+      gait_cmd = sprintf('start %s %d ', a_gait_name, a_num_cycles);
+
+%       write(this.ser_device,'start ',"string");
 %       writeline(this.ser_device, gait_cmd);
-
-
-      % [TEMPORARY] implementation just to validate Matlab MSoRo interface
-      write(this.ser_device,'start',"string");
-      gait_cmd = sprintf('%s%d', a_gait_name, a_num_cycles);
-      writeline(this.ser_device,gait_cmd);
-
+        write(this.ser_device, gait_cmd, "string");
+      fprintf('Gait sequence %s running\n',a_gait_name);
+      check_complete = "#Completed";
+      ii = 1;
+      while(ii)
+      data_recieve = strtrim(readline(this.ser_device))
+      if(contains(data_recieve,check_complete) == 1)
+          ii = 0;
+      end
+      end
+      fprintf('Gait sequence %s completed\n',a_gait_name);
+% while ~contains(check,'Completed')
+%     check = readline(this.ser_device);
+% end
     end
 
     % (Default) MSoRo serial callback handler (Arduino -> Matlab communication)
@@ -178,10 +173,7 @@ classdef MSoRo_IO < handle
 
       this.serial_data_rcvd = true;
       this.serial_data{end+1} = data;
-
-      save('MSoRo_IO_debug_prints.mat'); % [DEBUG] for run unit test of MSoRo
-
-      fprintf('[MSoRo_IO::msoro_serial_cb()] Data recieved: %s\n', data);
+      fprintf('[MSoRo_IO::msoro_serial_cb()] Data recieved: %s\n', this.serial_data{end}); % (VV) added the cell number {end}
 
       % TODO: how process readline data from Arduino?
     end
