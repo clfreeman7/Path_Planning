@@ -22,17 +22,11 @@ const int T_transition = 450;    // total transition time constant in ms.
 const int T_unspool = 50;        // motor unspooling time constant in ms.
 int8_t cycle[20][20];
 int8_t cycle_gait[20];
-int8_t cycle1[20]; 
-int8_t cycle2[20];                       // input gait cycle 2
+//int8_t cycle1[20]; 
+//int8_t cycle2[20];                       // input gait cycle 2
 String cmd;
-int8_t g_aa[20];
-int g_a[20];
 char inString[50];
-String gtype;
-String gnum;
-String gnum2;
 String no_of_times;
-int gnum1;
 int gait_value_int;
 String gait_type;
 String gait_value;
@@ -60,8 +54,8 @@ int state_matrix[number_of_motors][number_of_states] = { };
 /* Use booleans to avoid excessive / unwanted motor unspooling. */
 bool just_curled[number_of_motors] = { };
 bool just_relaxed[number_of_motors] = { };
-const int8_t cycle1_size = sizeof(cycle1);
-const int8_t cycle2_size = sizeof(cycle2);
+//const int8_t cycle1_size = sizeof(cycle1);
+//const int8_t cycle2_size = sizeof(cycle2);
 
 /* Setup function for communication and state definition (runs once). */
 void setup() {
