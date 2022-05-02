@@ -118,14 +118,13 @@ canned_sequence = 'B 10';
 canned_sequence = char(split(canned_sequence,',')); 
 for i = 1:size(canned_sequence,1)
 canned_sequence_split = strsplit(canned_sequence(i,:),' ');
-% gait_order(i,:) = canned_sequence_split(1,1)'
 gait_perform_seq(i,1) = canned_sequence_split(1,1);
 num_gait_cycles(i,1) = str2num(cell2mat(canned_sequence_split(1,2)));
 end
-gait_perform_seq = gait_perform_seq'
-num_gait_cycles = num_gait_cycles'
+gait_perform_seq = gait_perform_seq';
+num_gait_cycles = num_gait_cycles';
 
-for jj = 1:size(gait_names,2)
+for jj = 1:size(gait_perform_seq,2)
     msoro_robo.start_gait(gait_perform_seq{jj}, num_gait_cycles(jj));
     pause(1);
 end
