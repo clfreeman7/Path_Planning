@@ -11,11 +11,11 @@
 
 
 % [0] == Script setup
-% clear; clc
+clear; clc
 % Add dependencies to classpath
 addpath('../');
 
-gait_library = gait_library_2;%load('data/gait_library_2.mat').gait_library_2;
+gait_library = load('data/gait_library_2.mat').gait_library_2;%gait_library_2;
 
 % Configure figure tex interpreters
 set(groot, 'defaultAxesTickLabelInterpreter','latex');
