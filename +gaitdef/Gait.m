@@ -100,7 +100,7 @@ classdef Gait < handle
           for i = 1:this.len_gait
               this.twists(:, i) = this.delta_pose_2_twist(this.delta_poses(:, i), this.transition_time);
           end
-          this.Twist = this.delta_pose_2_twist(this.Delta_Pose, this.transition_time);
+          this.Twist = this.delta_pose_2_twist(this.Delta_Pose, this.transition_time*(this.len_gait-1));
           
         end
     
