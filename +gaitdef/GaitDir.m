@@ -3,10 +3,10 @@
 %  Enumeration class defining gait directions associated with MSoRo 
 %  locomotion gaits.
 %
-%  GaitDirs()
+%  GaitDir()
 %
 %  ====================== GaitDirs ========================
-classdef GaitDirs
+classdef GaitDir
 
   enumeration
       NE, NW, SW, SE, CW, CCW
