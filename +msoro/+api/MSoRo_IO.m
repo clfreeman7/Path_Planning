@@ -110,21 +110,22 @@ classdef MSoRo_IO < handle
     %                         sequence in a_transition_seq
     %
     function define_gait( this, a_transition_seq, a_gait_names )
-      assert( strcmp(class(a_transition_seq), 'cell'), ...
-              '[MSoRo_IO::define_gait()] Input must be cell array of vectors.');  % check input data format
+      assert( iscell(a_transition_seq), ...
+        '[MSoRo_IO::define_gait()] Input must be cell array of vectors.');  % check input data format
       assert( this.ser_device_open, ...
-              '[MSoRo_IO::define_gait()] No serial port opened.');                % check serial port opened
+        '[MSoRo_IO::define_gait()] No serial port opened.');                % check serial port opened
 
       for ii = 1:length(a_transition_seq)
-        gait_def = sprintf('%s%s%s',sprintf('define %s',a_gait_names{ii}),...
-            sprintf('%3d',a_transition_seq{ii}),sprintf(' end '))
-        keyboard
+        %         gait_def = sprintf('%s%s%s',sprintf('define %s',a_gait_names{ii}),...
+        %             sprintf('%3d',a_transition_seq{ii}),sprintf(' end '))
+        gait_def = sprintf('%s',sprintf('define %s',a_gait_names{ii}));
+        for i = 1:length(a_transition_seq{ii})
+          gait_def = sprintf('%s%s',gait_def, sprintf(' %d',a_transition_seq{ii}(i)));
+        end
+        gait_def = sprintf('%s%s', gait_def, ' end ')
         write(this.ser_device,gait_def,"string");
+        pause(1);
       end
-
-      % TODO: store gait internally?
-      %   requires a little doing: map from assigned name to internal name,
-      %   trans sequence, track last alphabetical name used
     end
 
     % Start MSoRo gait
@@ -141,22 +142,21 @@ classdef MSoRo_IO < handle
         a_num_cycles = 1;     % if not specified, run for 1 gait cycle
       end
 
-      % TODO: map internal gait name from a_gait_name?
-      gait_cmd = sprintf('start %s %d ', a_gait_name, a_num_cycles);
+      gait_cmd = sprintf('start %s %d ', a_gait_name, a_num_cycles)
 
 %       write(this.ser_device,'start ',"string");
 %       writeline(this.ser_device, gait_cmd);
-        write(this.ser_device, gait_cmd, "string");
-      fprintf('Gait sequence %s running\n',a_gait_name);
-      check_complete = "#Completed";
-      ii = 1;
-      while(ii)
-      data_recieve = strtrim(readline(this.ser_device))
-      if(contains(data_recieve,check_complete) == 1)
-          ii = 0;
-      end
-      end
-      fprintf('Gait sequence %s completed\n',a_gait_name);
+      write(this.ser_device, gait_cmd, "string");
+      fprintf('Gait sequence %s running for %d cycles.\n', a_gait_name, a_num_cycles);
+%       check_complete = "#Completed";
+%       ii = 1;
+%       while(ii)
+%         data_recieve = strtrim(readline(this.ser_device))
+%         if(contains(data_recieve,check_complete) == 1)
+%           ii = 0;
+%         end
+%       end
+%       fprintf('Gait sequence %s completed\n',a_gait_name);
 % while ~contains(check,'Completed')
 %     check = readline(this.ser_device);
 % end
