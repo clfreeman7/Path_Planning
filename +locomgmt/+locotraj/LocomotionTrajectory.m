@@ -14,10 +14,14 @@ classdef LocomotionTrajectory < handle
 
     poses;            % sequence of robot poses [x ; y ; theta]
 
-    gaits;            % sequence of +gaitdef.Gaits enumerations (TRANSLATE, ROTATE)
+    gait_names;       % should be cell array (or array) of chars representing 
+                      %     sequence of gaits comprising trajectory (e.g. 'A', 'B', 'A', 'B')
+
+    gait_types;       % sequence of +gaitdef.GaitType enumerations (TRANSLATE, ROTATE)
+
     gait_durations;   % corresponding gait durations (time or number of gait periods)
 
-    gait_directions;  % sequence of +gaitdef.GaitDirs enumerations (NE, NW, SW, SE, CW, CCW)
+    gait_directions;  % sequence of +gaitdef.GaitDir enumerations (NE, NW, SW, SE, CW, CCW)
                       % Note: this is probably a temporary field until the
                       %         MSoRo trajectory execution/management is
                       %         better hashed out.
