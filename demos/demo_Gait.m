@@ -84,6 +84,8 @@ end
 
 
 gait_library_2
-
+for ii = 1:length(gait_library_2)
+  gait_library_2(ii).gait_name = char(65 + ii - 1);
+end
 
 
