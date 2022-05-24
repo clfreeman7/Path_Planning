@@ -3,9 +3,9 @@
 % Author: Arun Mahendran Niddish anmahendran@crimson.ua.edu
 %
 % Dependencies: 
-%   +offlineanalysis.rigid_transform_3D 
-%   +offlineanalysis.createMaskCarpetBlue
-%   +offlineanalysis.onlinetracker
+%   +onlineanalysis.rigid_transform_3D 
+%   +onlineanalysis.createMaskCarpetBlue
+%   +onlineanalysis.onlinetracker
 %
 % Description: 
 %    To track marker coordinates, get the rotation and translation matrix
