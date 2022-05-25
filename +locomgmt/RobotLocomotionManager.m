@@ -14,15 +14,15 @@
 %
 %  ============================= RobotLocomotionManager =================
 classdef RobotLocomotionManager < handle  
-  properties  (Access = public)
+  properties  (Access = public)   % temporarily leaving all properties public
     % Scenario properties
     goal_pos;           % robot goal position (currently unused)
     
     % Path/trajectory planning
-    traj_plan;
+    trajectory_plan;
     
     % Robot (locomotive) dynamics
-    gait_dynamics;
+    gait_models;
 
     % Robot configuration
     robo_pose;            % robot pose
@@ -57,7 +57,7 @@ classdef RobotLocomotionManager < handle
 
       % == Internal state      
       %   Path/Trajectory Planning
-      this.traj_plan = [];
+      this.trajectory_plan = [];
 
       %   Initialize timestamps
       this.poll_start_timestamp = -1;
@@ -87,27 +87,29 @@ classdef RobotLocomotionManager < handle
   end     % methods
 
   methods (Abstract)
+
     % Main method (manage indefinite robot control & execution)
     start( this )
 
+    % Start-up/initialize/shutdown (methods designed for one-time execution)
+    initialize( this )                % initialization procedures (for class instance and/or robot)
+    shutdown( this )                  % shutdown procedures (for class instance and/or robot)
+
+    % Logging/data recording
+    init_logging( this )              % setup associated with data recording or visualization
+    save_scenario_results( this )     % export/save run data (e.g. .mat archive)
+
     % Periodic methods
     update_robo_pose( this )  % update current robot pose
-    update_robo_cntrl( this ) % generate updated control command(s)
+    compute_robo_cntrl( this ) % compute updated control command(s)
     send_cntrl( this )        % send control command(s) to robot
     goal_reached( this )      % evaluate whether goal reached
 
-    % Start-up/initialize/shutdown (methods designed for one-time execution)
-    initialize( this )          % initialization procedures (specific to either the class instance or robot)
-    init_logging( this )              % setup related to data recording or visualization
-    shutdown( this )            % shutdown procedures (specific to either the class instance or robot)
-    save_scenario_results( this )       % export/save run data (e.g. .mat archive)
-    generate_trajectory_plan( this )  % generate robot trajectory
-
-    % Setters
-    set_cntrl_params( this )    % set control parameters
-    set_goal( this )            % set locomotion goal (pose)
-    set_logging_level( this )   % set logging verbosity
-    set_gait_dynamics( this )   % set gait data
+    % Planning & control
+    set_goal( this )                % set locomotion goal (pose)
+    set_trajectory_plan( this )     % set robot trajectory plan
+    set_gait_models( this )         % set gait motion models
+    set_cntrl_params( this )        % set control parameters
 
   end     % methods (Abstract)
 end     % class
