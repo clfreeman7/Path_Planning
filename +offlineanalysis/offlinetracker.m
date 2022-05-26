@@ -71,7 +71,7 @@ function tracking_data = videotracker(videoObject,...
 
 % Setup other parameters
 numberOfFrames = videoObject.NumberOfFrame;
-keyboard
+
 figure(1)
 for k = start_frame : numberOfFrames   
 tic
@@ -82,11 +82,12 @@ tic
     end
     
         thisFrame = read(videoObject,k);
-        thisFrame = imcrop(thisFrame,[0,0,630,400]);
-        newim = createMaskfixedblue3(thisFrame);
+        thisFrame = imcrop(thisFrame,[0,120,640,320]);
+%         newim = createMaskfixedblue3(thisFrame);
+          newim = createMaskCarpetBlue(thisFrame);
 %         newim = createMaskpink2(thisFrame);
 %         newim = createMaskpink4(thisFrame);
-        newim = bwareaopen(newim,2);
+        newim = bwareaopen(newim,10);
         newim = imfill(newim, 'holes');
         axis on;
         
@@ -180,20 +181,20 @@ clear d;
 end
 if ifplot
     % Plotting the points
-%     imshow(thisFrame)
-%     set(gcf, 'Position',  [100, 100, 750, 400])
-    set(gca,'XLim',[0 700],'YLim',[0 700]);
+    imshow(thisFrame)
+    set(gcf, 'Position',  [100, 100, 750, 400])
+%     set(gca,'XLim',[0 700],'YLim',[0 700]);
     hold on
-    % plot(PrevPt(:,1),PrevPt(:,2),'g*','LineWidth',0.5,'MarkerSize',2)
-    mean_centroid = mean(PrevPt);
+    plot(PrevPt(:,1),PrevPt(:,2),'g*','LineWidth',0.5,'MarkerSize',2)
+%     mean_centroid = mean(PrevPt);
     % plot([PrevPt(1,1) PrevPt(2,1)], [PrevPt(1,2) PrevPt(2,2)],'LineWidth',1.5)
     % h = animatedline('LineStyle','-','Color','b','LineWidth',1.5);
     caption = sprintf('%d blobs found in frame #%d 0f %d', count, k, numberOfFrames);
     title(caption, 'FontSize', 20);
-    h = animatedline('Marker','o','Color','b','MarkerSize',1,'MarkerFaceColor','b');
-    h2 = animatedline('LineStyle','-','Color','r','LineWidth',1.5);
-    addpoints(h,mean_centroid(1,1),mean_centroid(1,2))
-    drawnow;
+%     h = animatedline('Marker','o','Color','b','MarkerSize',1,'MarkerFaceColor','b');
+%     h2 = animatedline('LineStyle','-','Color','r','LineWidth',1.5);
+%     addpoints(h,mean_centroid(1,1),mean_centroid(1,2))
+%     drawnow;
     axis on
     hold off
 end
