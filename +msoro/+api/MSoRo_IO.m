@@ -122,8 +122,9 @@ classdef MSoRo_IO < handle
         for i = 1:length(a_transition_seq{ii})
           gait_def = sprintf('%s%s',gait_def, sprintf(' %d',a_transition_seq{ii}(i)));
         end
-        gait_def = sprintf('%s%s', gait_def, ' end ')
+        gait_def = sprintf('%s%s', gait_def, ' end ');
         write(this.ser_device,gait_def,"string");
+        fprintf('[MSoRo_IO::define_gait()] %s\n', gait_def);
         pause(1);
       end
     end
@@ -147,7 +148,8 @@ classdef MSoRo_IO < handle
 %       write(this.ser_device,'start ',"string");
 %       writeline(this.ser_device, gait_cmd);
       write(this.ser_device, gait_cmd, "string");
-      fprintf('Gait sequence %s running for %d cycles.\n', a_gait_name, a_num_cycles);
+      fprintf('[MSoRo_IO::start_gait()] %s\n', gait_cmd);
+      fprintf('[MSoRo_IO::start_gait()] Gait sequence %s running for %d cycles.\n', a_gait_name, a_num_cycles);
 %       check_complete = "#Completed";
 %       ii = 1;
 %       while(ii)

@@ -28,24 +28,26 @@ set(groot, 'defaultTextInterpreter','latex');
 GAIT_LIBRARY_MAT = 'data/gait_library_2.mat';
 TRAJECTORY_PLAN_MAT = 'data/msoro_openloop_trajectory.mat';
 
-%  MSoRo serial port config.
+OUTPUT_MAT_FILE = 'data/msoro_exp_scenario01.mat';
+
+%  MSoRo serial port configuration
 port = '/dev/ttyUSB0';
 baud = 9600;
 timeout = 30;
 
 
 % [2] == Instantiate Matlab-ROS framework for trajectory planning and tracking
-locom_mgr_params.robo_pose_update_period = 1;   % sec. (periodicity at which to retrieve updated robot pose)
-% locom_mgr_params.robo_cntrl_update_period = 5;       % sec. (periodicity at which to compute update control)
-locom_mgr = locomgmt.RobotLocomotionManager_Impl( locom_mgr_params );
+locom_mgr_params.robo_pose_update_period = 0.5;   % sec. (periodicity at which to retrieve updated robot pose)
+locom_mgr = locomgmt.OpenLoopLocomotionManager( locom_mgr_params );
+
+% Configure logging (optional)
+logging_params.log_level = 0;             % not currently used
+logging_params.data_collect_level = 1;    % collect ALL data
+locom_mgr.set_logging( logging_params );
 
 % Set gait motion model(s)
-gait_motion_models = load(GAIT_LIBRARY_MAT).gait_library_2;
+gait_motion_models = load(GAIT_LIBRARY_MAT).gait_library_2([2, 5]);
 locom_mgr.set_gait_models(gait_motion_models); 
-
-% Set open-loop trajectory plan
-trajectory_plan = load(TRAJECTORY_PLAN_MAT).robo_traj_plan;
-locom_mgr.set_trajectory_plan(trajectory_plan);
 
 % Initialize
 msoro_io_params.port = port;
@@ -56,9 +58,12 @@ locom_mgr.initialize(msoro_io_params);
 
 % [3] == Begin robot locomotion control/management
 input('Press <Enter> to begin robot loocmotion management.');
-locom_mgr.start();
+trajectory_plan = load(TRAJECTORY_PLAN_MAT).robo_traj_plan;
+locom_mgr.start( trajectory_plan );   % begin managing/executing planned trajectory
 
 
+% Save results to output .mat file
+locom_mgr.save_scenario_results( OUTPUT_MAT_FILE );
 
 
 

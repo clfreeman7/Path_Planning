@@ -41,7 +41,7 @@ classdef RobotLocomotionManager < handle
     logging_params;
         
     % Data recording
-    record;    
+    data_record;
   end
   
   methods
@@ -96,7 +96,7 @@ classdef RobotLocomotionManager < handle
     shutdown( this )                  % shutdown procedures (for class instance and/or robot)
 
     % Logging/data recording
-    init_logging( this )              % setup associated with data recording or visualization
+    set_logging( this )               % setup associated with data recording or visualization
     save_scenario_results( this )     % export/save run data (e.g. .mat archive)
 
     % Periodic methods
