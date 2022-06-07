@@ -54,15 +54,14 @@ classdef OpenLoopLocomotionManager < locomgmt.RobotLocomotionManager
       this.data_record.trajectory_plan = [];          % (sequence of locomgmt.locotraj.LocomotionTrajectory instances)
 
       this.data_record.robo_pose_update_period = this.robo_pose_update_period;  % (pose update rate)  
-      
       this.cam2 = [];
       this.numberofmarkers = [];
       this.debug_code = [];
       this.ifplot = [];
-      this.k = [];
-      this.PrevPt = [];
-      this.first_pt = [];
-      this.Prev_mean_centroid = [];
+      this.k = 1;
+      this.PrevPt = zeros(8,3);
+      this.first_pt = zeros(8,3);
+      this.Prev_mean_centroid = zeros(1,3);
       
     end
     
@@ -186,7 +185,7 @@ classdef OpenLoopLocomotionManager < locomgmt.RobotLocomotionManager
             this.numberofmarkers = 8;
             this.debug_code = 1; % Yes or No (1 or 0)
             this.ifplot = 1; % Yes or No (1 or 0)
-            this.k = 1;
+            
             
 %             onlinetracker_class.numberofmarkers = this.numberofmarkers;
             this.PrevPt = zeros(8,3);
@@ -258,7 +257,7 @@ classdef OpenLoopLocomotionManager < locomgmt.RobotLocomotionManager
       % visual tracking
       
       
-      [tr_data,this.PrevPt,this.Prev_mean_centroid,this.first_pt] = this.ontracker.videotracker(this.cam2,this.PrevPt,this.Prev_mean_centroid,this.first_pt,...
+      [tr_data,this.PrevPt,this.Prev_mean_centroid,this.first_pt] = ontracker.videotracker(this.cam2,this.PrevPt,this.Prev_mean_centroid,this.first_pt,...
                                                                       this.numberofmarkers,1,1,this.k);
       this.k = this.k + 1;
       
