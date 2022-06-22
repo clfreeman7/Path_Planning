@@ -121,7 +121,7 @@ classdef OpenLoopLocomotionManager < locomgmt.RobotLocomotionManager
           % run appropriate one
           this.send_cntrl( robo_cntrl );
 
-          this.robo_cntrl_update_period = 1;%robo_cntrl.gait_duration*robo_cntrl.gait_period - 0.5;    % time to next scheduled gait command (0.2 sec. buffer); TODO -> parametrize 0.5 sec.
+          this.robo_cntrl_update_period = robo_cntrl.gait_duration*robo_cntrl.gait_period - 0.5;    % time to next scheduled gait command (minus  0.5 sec. to maintain conitnuous gait execution); TODO -> parametrize 0.5 sec.
           this.robo_cntrl_update_period
           robo_cntrl.gait_duration
           robo_cntrl.gait_period
