@@ -1,4 +1,4 @@
-function [allPerms, nPerms] = listpermutations(gaitCycle, issymmetric)
+function [allPerms, nPerms] = listpermutations(gaitCycle, issymmetric, isCyclic)
 % LISTPERMUTATIONS  
 % listpermutations(gaitCycle) lists all m unique cyclic and symmetric
 % permutations of the robot states in the n-vector gaitCycle as rows in an
@@ -9,6 +9,8 @@ function [allPerms, nPerms] = listpermutations(gaitCycle, issymmetric)
 % symmetric permutations of the robot states in the n-vector gaitCycle as
 % rows in an m x n matrix. Symmetric permutations will be excluded if
 % issymmetric = false.
+%
+% isCylic toggles whether cyclic permutations are calculated. 
 %
 % [allPerms, nPerms] = listpermutations(gaitCycle) will also list the
 % total number nPerms of cyclic and symmetric permutations. 
@@ -46,8 +48,12 @@ function [allPerms, nPerms] = listpermutations(gaitCycle, issymmetric)
     
     % Find symmetric permutation cycles 
     for i = 1:lenCycle
-        % Find cyclic permutations
-       cyclicPerms = circshift(gaitCycle, i);
+        if isCyclic
+            % Find cyclic permutations
+           cyclicPerms = circshift(gaitCycle, i);
+        else
+            cyclicPerms = gaitCycle;
+        end
        if issymmetric
            symPerms = symLabels(:, cyclicPerms);
            allPerms = [allPerms; symPerms];

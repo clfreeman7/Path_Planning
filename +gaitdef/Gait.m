@@ -82,18 +82,20 @@ classdef Gait < handle
           this.primitive_labels = gait_data_object.primitive_labels;
           this.len_gait = gait_data_object.len_gait;
           
-          if all(class(gait_data_object) == 'offlineanalysis.GaitTest')
-            this.category = 1;
-            % Find average change in robot pose for each motion primitive.
+%           if class(gait_data_object) == 'offlineanalysis.GaitTest'
+%             this.category = 1;    
+%           end
+%           if class(gait_data_object) == 'offlineanalysis.GaitPredict'
+%             this.category = 2;    
+%           end
+                      % Find average change in robot pose for each motion primitive.
             this.delta_poses(1,:) = mean(gait_data_object.delta_x);
             this.delta_poses(2,:) = mean(gait_data_object.delta_y);
             this.delta_poses(3,:) = mean(gait_data_object.delta_theta);
             
             this.var_delta_poses(1,:) = var(gait_data_object.delta_x);
             this.var_delta_poses(2,:) = var(gait_data_object.delta_y);
-            this.var_delta_poses(3,:) = var(gait_data_object.delta_theta);            
-          end
-          
+            this.var_delta_poses(3,:) = var(gait_data_object.delta_theta);        
           this.calculate_total_motion;
           
           % Convert change in robot pose to body twists. 
