@@ -121,9 +121,11 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
                 frames_per_trans = floor(frames_per_trans);    % make integer
                 unorderedPoses(1:2, :) = p(initialFrame - 1:frames_per_trans:end);
             else 
-                this.keyframes = zeros(242, 1);
+                n_keyframes = this.n_unique_states*(this.n_unique_states-1)+2;
+                this.keyframes = zeros(n_keyframes, 1);
                 this.keyframes(1) = this.frame_1 - 1;
-                for k = 2:242
+                for k = 2:n_keyframes
+                    
                     if mod(k, 2) == 0 % if even index
                         this.keyframes(k) = this.keyframes(k-1) + ceil(frames_per_trans);
                     else
@@ -139,9 +141,9 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             key_poses = this.poses(:, this.keyframes);
             
             % Define local changes in these poses w.r.t. to each tail pose. 
-            unordered_deltas = zeros(3, 240);
+            unordered_deltas = zeros(3, this.n_unique_states*(this.n_unique_states-1));
             
-            for k = 1:240     % total number of transitions in Euler tour.
+            for k = 1:this.n_unique_states*(this.n_unique_states-1)     % total number of transitions in Euler tour.
                 % Calculate change in robot heading.
                 unordered_deltas(3, k) = key_poses(3, k+2) - key_poses(3, k+1);
                 % Calculate change in robot position.
@@ -162,14 +164,17 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             this.delta_theta(this.delta_theta < -pi)  = this.delta_theta(this.delta_theta < -pi) +2*pi;
         end
 
-        function plot(this)
+        function plot(this, is_labeled)
+            if nargin<2
+                is_labeled = false;
+            end
             % Extract the global poses for every keyframe.
-            key_poses = this.poses(:, this.keyframes);
+            key_poses = this.poses(:, this.keyframes) - this.poses(:,1);
             % Reconstruct the keyframe positions from motion primitives.
-            pose_check(:, 1) = this.poses(:, this.keyframes(2));
+            pose_check(:, 1) = this.poses(:, this.keyframes(2)) - this.poses(:,1);
             R =  eul2rotm([pose_check(3,1) 0 0]);
             pos = [pose_check(1:2, 1); 0];
-            for i = 1:240
+            for i = 1:this.n_unique_states*(this.n_unique_states-1)
                 k = this.primitive_labels(i);
                 delta_x_local = this.delta_x(k);
                 delta_y_local = this.delta_y(k);
@@ -181,21 +186,27 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
                 % Store global position data for verification.
                 pose_check(:, i+1) = pos;
             end
-            
+
+% Reconstruct the Euler tour trajectory using the SE2 class and motion
+% primitives. 
 
             hold on
-            plot(this.poses(1,:), this.poses(2,:))
+            plot(this.poses(1,:) - this.poses(1,1), this.poses(2,:)- this.poses(2,1))
             xlabel('x (cm)')
             ylabel('y (cm)')
-            title('Verification of Motion Primitive Calculations')
+            daspect([1 1 1])
+            
             hold on
             sz = 30;
-            c1 = linspace(1,10,length(this.keyframes));
+            c1 = linspace(1,length(this.robo_states)-1,length(this.keyframes));
             c2 = [0.6350 0.0780 0.1840];
             scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled')
             scatter(pose_check(1, :), pose_check(2, :),sz, c2)
-            legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
+            if is_labeled
+                title('Verification of Motion Primitive Calculations')
+                legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
                    'Keyframe Positions Reconstructed from Motion Primitives')
+            end
         end
     end  %methods
 

@@ -2,12 +2,11 @@
 % Script: demo_Gait.m
 %  
 % Dependencies:
-% Dependencies:
-%   +demos/data/visualtracking/Gait A.mat
-%   +demos/data/visualtracking/Gait B.mat
-%   +demos/data/visualtracking/Gait B.mat
-%   +demos/data/visualtracking/Gait D.mat
-%   +demos/data/visualtracking/Gait E.mat
+%   +demos/data/visualtracking/Gait A_corrected.mat
+%   +demos/data/visualtracking/Gait B_corrected.mat
+%   +demos/data/visualtracking/Gait B_corrected.mat
+%   +demos/data/visualtracking/Gait D_corrected.mat
+%   +demos/data/visualtracking/Gait E_corrected.mat
 %
 %   +offlineanalysis/GaitTest
 %   +offlineanalysis/Gait
@@ -48,7 +47,7 @@ for i = 1:n_gaits
     gait_exp_2(i).params.frame_1 = frame_start_list(i);
     
     % Extract and store raw data from each trial.
-    filename = ['data/visualtracking/Gait', ' ', num2str(char('A' + i -1)), '.mat'];
+    filename = ['data/visualtracking/Gait', ' ', num2str(char('A' + i -1)), '_corrected.mat'];
     gait_exp_2(i).raw_data = load(filename).all_pt;  
 end
 
@@ -59,33 +58,52 @@ end
 
 % Set up figure for plotting
 figure(1)
-tiledlayout(1, 5)
+t = tiledlayout(2, 3);
 
 % Instantiate objects for each gait tested. 
 for i = 1:n_gaits
     all_gaits(i) = offlineanalysis.GaitTest(gait_exp_2(i).raw_data, ...
                                                  gait_sequences{i}(1,:), ...
                                                  gait_exp_2(i).params);
-    nexttile(i);
-    all_gaits(i).plot;      
+    nexttile;
+    all_gaits(i).plot;        
+
 end
+% Add legend.
+lgd = legend('Continuous robot position', 'Actual keyframe positions', ...
+                  'Keyframe positions reconstructed from motion primitives','robot orientation');
+lgd.Layout.Tile = 'north';
+lgd.Orientation = 'horizontal';
 
+% Add colorbar.
+a = colorbar;
+a.Label.String = 'Number of gaits executed';
+a.Layout.Tile = 'east';
 
+title(t, 'Experimental results  of synthesized gaits for orange robot on black mat','FontSize',24)
 % [3] == Instantiate gait objects for each gait tested to build a gait
 % library. 
 
 figure(3)
-tiledlayout(1, 5)
+t2 = tiledlayout(2, 3);
 for i = 1:n_gaits
     gait_library_2(i) = gaitdef.Gait(all_gaits(i), gait_exp_2(i).params);
+    gait_library_2(i).gait_name = char(65 + i - 1);
     nexttile;
     gait_library_2(i).plot(30)
 end
+% Add legend.
+lgd = legend('Continuous robot position', 'Actual keyframe positions', ...
+                  'Keyframe positions reconstructed from gait twists', 'robot orientation');
+lgd.Layout.Tile = 'north';
+lgd.Orientation = 'horizontal';
 
+% Add colorbar.
+a = colorbar;
+a.Label.String = 'Number of gaits executed';
+a.Layout.Tile = 'east';
 
-gait_library_2
-for ii = 1:length(gait_library_2)
-  gait_library_2(ii).gait_name = char(65 + ii - 1);
-end
+title(t2, 'Propogation of average gait twists for orange robot on black mat','FontSize',24)
 
+save data/gait_library_2_corrected.mat gait_library_2
 

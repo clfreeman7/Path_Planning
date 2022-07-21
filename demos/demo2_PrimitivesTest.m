@@ -3,11 +3,11 @@
 % 
 % Dependencies:
 %   +demos/data/visualtracking/state_order_2.mat
-%   +demos/data/visualtracking/Euler 7.mat
-%   +demos/data/visualtracking/Euler 8.mat
-%   +demos/data/visualtracking/Euler 9.mat
-%   +demos/data/visualtracking/Euler 10.mat
-%   +demos/data/visualtracking/Euler 11.mat
+%   +demos/data/visualtracking/Euler 7_corrected.mat
+%   +demos/data/visualtracking/Euler 8_corrected.mat
+%   +demos/data/visualtracking/Euler 9_corrected.mat
+%   +demos/data/visualtracking/Euler 10_corrected.mat
+%   +demos/data/visualtracking/Euler 11_corrected.mat
 %   +offlineanalysis/PrimtivesTest
 %
 % Future Dependencies:
@@ -53,7 +53,7 @@ for i = 1:5
     exp_2(i).params.frame_1 = frame_start_list(i);
     
     % Extract and store raw data from each trial.
-    filename = ['data/visualtracking/Euler', ' ', num2str(i+6), '.mat'];
+    filename = ['data/visualtracking/Euler', ' ', num2str(i+6), '_corrected.mat'];
     exp_2(i).raw_data = load(filename).all_pt;  
 end
 
@@ -63,20 +63,34 @@ end
 
 % Set up figure. 
 figure(1)
-tiledlayout(1, 5);
+t = tiledlayout(2, 3);
 
 for i = 1:5
     all_trials(i) = offlineanalysis.PrimitivesTest(exp_2(i).raw_data, exp_2(i).params, state_order_2(i,:));
     nexttile;
     all_trials(i).plot;
-    
+    title("Trial " +num2str(i))
     % Extract data to store in a more convenient way for gait synthesis.
     delta_x_data(i, :) = all_trials(i).delta_x;
     delta_y_data(i, :) = all_trials(i).delta_y;
     delta_theta_data(i, :) = all_trials(i).delta_theta;
 end
+% Add legend.
+lgd = legend('Continuous robot position', 'Actual keyframe positions', ...
+                  'Keyframe positions reconstructed from gait twists');
+lgd.Layout.Tile = 'north';
+lgd.Orientation = 'horizontal';
+
+% Add colorbar.
+a = colorbar;
+a.Label.String = 'Number of motion primitives executed';
+a.Layout.Tile = 'east';
+
+title(t, 'Motion primitive exploration (Euler tours) for orange robot on black mat','FontSize',24)
+
 
 % [3] == Concatenate all motion primitive motion data into a 3D matrix.
 motion_primitive_data = cat(3, delta_x_data, delta_y_data, delta_theta_data);
 
+save data/experiment_2_motion_primitives_corrected.mat motion_primitive_data
 

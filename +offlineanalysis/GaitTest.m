@@ -95,7 +95,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
         % Convert the 241 roobot state sequence into a sequence of motion 
         % primitive labels.
         function states_to_primitives(this)
-            states = this.robo_states;
+            states = [this.robo_states this.robo_states(1)];
             n_states = this.n_unique_states;
             for i = 1:length(states)-1
                 this.primitive_labels(i) = inverse_map(states(i), states(i+1), n_states);
@@ -199,24 +199,25 @@ classdef GaitTest < offlineanalysis.ExperimentalData
                     pose_check(:, k+1) = pos;
                 end
             end
-
+            Poses = key_poses(:,1:this.len_gait:end);
+            w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
             hold on
             plot(this.poses(1,:), this.poses(2,:))
             xlabel('x (cm)')
             ylabel('y (cm)')
-            title('Verification of Motion Primitive Calculations')
+           title("Gait [" + num2str(this.robo_states) + "]")
             hold on
             sz = 30;
-            c1 = linspace(1,10,length(this.keyframes));
+            c1 = linspace(1,this.n_cycles,length(this.keyframes));
             c2 = [0.6350 0.0780 0.1840];
 
             scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled')
              scatter(pose_check(1, :), pose_check(2, :),sz, c2)
-            legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
-                   'Keyframe Positions Reconstructed from Motion Primitives')
-             xlim([-11, 11])
-             ylim([-25, 25])
-             axis equal
+             quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0)
+            %legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
+            %       'Keyframe Positions Reconstructed from Motion Primitives')
+             daspect([1 1 1]);
+             grid on;
         end
         
     end  %methods
