@@ -28,9 +28,13 @@ workspace;  % Make sure the workspace panel is showing.
 format long g;
 format compact;
 
-inputfilename = 'Marker Focussed Videos\Euler Tours\Euler 7.mp4';  % Video to track
-outputfilename = 'Phase10_2_gcf';
+% inputfilename = 'Marker Focussed Videos\MTA_4\MTA4_Gait2_Carpet.mp4';  % Video to track
+inputfilename = 'video_timestamp.mp4';
+outputfilename = 'video_timestamp_gcf';
+ts = load('video_timestamp.mat');
 options.startframe = 1;
 options.numberofmarkers = 8;
 options.outputvideo = true;
 tracking_data = offlinetracker(inputfilename,outputfilename,options);
+
+tracking_data = [tracking_data ts.time_stamp];
