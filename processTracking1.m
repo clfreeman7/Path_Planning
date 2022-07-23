@@ -3,8 +3,8 @@
 
 close all; clc; clear;
 
-load 'Euler 1.mat'
-load 'stateOrder.mat'
+load 'demos/data/visualtracking/Euler 1.mat'
+load 'demos/data/visualtracking/stateOrder.mat'
 isplotted = true;
 mmPerPixel = 2.426;    % mm / pixel
 frameRate = 30;        % frames / sec
@@ -100,7 +100,7 @@ motionPrimitives = motionPrimitivesUnordered(:, orderIndex);
 if isplotted
     figure(1)
     hold on
-    plot(p(1:3660,1), p(1:3660,2))
+    plot((pAvg(1:3660,1) - pAvg(1,1))/mmPerPixel*10, (pAvg(1:3660,2)-pAvg(1,2))/mmPerPixel*10)
     xlabel('x (cm)')
     ylabel('y (cm)')
     title('Trial 1: Verification of Motion Primitive Calculations')

@@ -181,7 +181,7 @@ classdef Gait < handle
                     Pose(:, i+1) = pos;
                     Pose(3,i+1) = Pose(3,i) + this.Delta_Pose(3);
             end
-            
+
             % Check the math of the methods by using the Twist of
             % the entire gait. 
             w = ((max(Pose(1,:))-min(Pose(1,:))).^2+(max(Pose(2,:))-min(Pose(2,:))).^2).^.5/10;

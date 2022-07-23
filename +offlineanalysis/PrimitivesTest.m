@@ -64,7 +64,22 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
           this.states_to_primitives;
           
           % Find the local rotation matrices for each motion primitive. 
+                      
+            if size(raw_data, 2) > 3*this.n_markers + 2*9 + 2*3 % if timestamps are included in the raw data
+                n_keyframes = this.n_unique_states*(this.n_unique_states-1)+2;
+            this.keyframes = zeros(n_keyframes, 1);
+            this.keyframes(1) = this.frame_1 - 1;
+
+                start_time = this.timestamps(this.keyframes(1));
+                end_time = start_time + (n_keyframes - 1)*this.transition_time;
+                keytimes = start_time: this.transition_time: end_time;
+                for i = 2:n_keyframes
+                    [~, idx] = min(abs(this.timestamps - keytimes(i)));
+                    this.keyframes(i) = idx;
+                end
+            else
           this.extract_keyframes;
+            end
           this.calculate_local_motions;
         end
         
@@ -115,24 +130,24 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
         
         % Extract keyframes.
         function extract_keyframes(this)
-            frames_per_trans = this.framerate * this.transition_time; 
-            if (frames_per_trans - floor(frames_per_trans)) < 0.05
-                % If # frames per transition is close to an integer: 
-                frames_per_trans = floor(frames_per_trans);    % make integer
-                unorderedPoses(1:2, :) = p(initialFrame - 1:frames_per_trans:end);
-            else 
                 n_keyframes = this.n_unique_states*(this.n_unique_states-1)+2;
-                this.keyframes = zeros(n_keyframes, 1);
-                this.keyframes(1) = this.frame_1 - 1;
-                for k = 2:n_keyframes
-                    
-                    if mod(k, 2) == 0 % if even index
-                        this.keyframes(k) = this.keyframes(k-1) + ceil(frames_per_trans);
-                    else
-                        this.keyframes(k) = this.keyframes(k-1) + floor(frames_per_trans);
+            this.keyframes = zeros(n_keyframes, 1);
+            this.keyframes(1) = this.frame_1 - 1;
+              % if timestamps are not included, assume constant framerate and approximate
+                frames_per_trans = this.framerate * this.transition_time; 
+                if (frames_per_trans - floor(frames_per_trans)) < 0.05
+                    % If # frames per transition is close to an integer: 
+                    frames_per_trans = floor(frames_per_trans);    % make integer
+                else
+                    for k = 2:n_keyframes
+                        if mod(k, 2) == 0 % if even index
+                            this.keyframes(k) = this.keyframes(k-1) + ceil(frames_per_trans);
+                        else
+                            this.keyframes(k) = this.keyframes(k-1) + floor(frames_per_trans);
+                        end
                     end
                 end
-            end
+            
         end
         
         
@@ -171,7 +186,8 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             % Extract the global poses for every keyframe.
             key_poses = this.poses(:, this.keyframes) - this.poses(:,1);
             % Reconstruct the keyframe positions from motion primitives.
-            pose_check(:, 1) = this.poses(:, this.keyframes(2)) - this.poses(:,1);
+            pose_check(1:2, 1) = this.poses(1:2, this.keyframes(2)) - this.poses(1:2,1);
+            pose_check(3,1) = this.poses(3, this.keyframes(2));
             R =  eul2rotm([pose_check(3,1) 0 0]);
             pos = [pose_check(1:2, 1); 0];
             for i = 1:this.n_unique_states*(this.n_unique_states-1)

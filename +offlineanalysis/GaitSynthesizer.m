@@ -90,8 +90,8 @@ classdef GaitSynthesizer < handle
            this.set_property(params, 'alpha_motion', 2*[1 1 1]');
            this.set_property(params, 'alpha_var', 0.5*[1 1 1]');
            this.set_property(params, 'alpha_len', 1);
-           this.set_property(params, 'n_variations', 100);
-           this.set_property(params, 'MAX_ITER', 100);
+           this.set_property(params, 'n_variations', 50);
+           this.set_property(params, 'MAX_ITER', 50);
            this.set_property(params, 'goal', 1);
            this.set_property(params, 'MAX_TRANSLATION', 1);
            this.set_property(params, 'MAX_ROTATION', deg2rad(5));
@@ -180,8 +180,8 @@ classdef GaitSynthesizer < handle
               intial_guess = [18, 47];
               x0 = zeros(n_primitives,1);
               x0([intial_guess]) = 1;
-              options = optimoptions('intlinprog');
-              options.Display = 'off';
+               options = optimoptions('intlinprog');
+               options.Display = 'off';
               
               while n_iterations < this.MAX_ITER && isSingleCycle == false
                   [x1,fval1,exitflag1] = intlinprog(f,intcon,A,b,B,beq,lb,ub,x0,options);

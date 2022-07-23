@@ -176,8 +176,8 @@ classdef GaitTest < offlineanalysis.ExperimentalData
         function plot(this)
                         
             % Normalize w.r.t. the origin. 
-            this.poses = this.poses - this.poses(:,1);
-
+            this.poses(1:2,:) = this.poses(1:2,:)  - this.poses(1:2 ,1);
+            
             % Extract the global poses for every keyframe.
             key_poses = this.poses(:, this.keyframes);
             % Reconstruct the keyframe positions from motion primitives.

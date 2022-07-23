@@ -24,13 +24,12 @@
 %   
 
 
-clear; clc; close all
+clear; clc; close all;
 
 % [0] == Script setup
 % Add dependencies to classpath
 addpath('../');
 load('data/visualtracking/state_order_2.mat')
-
 % Configure figure tex interpreters
 set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
@@ -39,7 +38,12 @@ set(groot, 'defaultTextInterpreter','latex');
 frame_start_list = [76, 286, 257, 404, 808];
 
 % Find marker order by investigating first frame.
-
+marker_order_list = [7 8 5 3 1 2 4 6;
+                     7 8 5 3 2 1 4 6;
+                     8 7 4 3 1 2 5 6;
+                     8 7 5 3 1 2 4 6;
+                    7 8 5 3 2 1 4 6];
+show_markers = true;
 
 for i = 1:5
     % Define robot.
@@ -51,12 +55,31 @@ for i = 1:5
     
     % Extract and store first frame information.
     exp_2(i).params.frame_1 = frame_start_list(i);
-    
+
+        % Look at image to determine marker order.
+    exp_2(i).params.marker_order = marker_order_list(i, :);
     % Extract and store raw data from each trial.
     filename = ['data/visualtracking/Euler', ' ', num2str(i+6), '_corrected.mat'];
     exp_2(i).raw_data = load(filename).all_pt;  
 end
-
+for iTrial = [3, 1, 2, 4, 5]
+    % Find initial rotation matrix for each trial to have consistent fixed frame.
+        markers_x(iTrial, :) = exp_2(iTrial).raw_data(1, 1:3:22);
+    markers_y(iTrial, :) = exp_2(iTrial).raw_data(1, 2:3:23);
+    centroid(:, :, iTrial) = mean([markers_x(iTrial, :); markers_y(iTrial, :)], 2);
+    if iTrial == 3
+        reference_markers = [markers_x(iTrial, exp_2(iTrial).params.marker_order);
+                             markers_y(iTrial, exp_2(iTrial).params.marker_order);]...
+                             - centroid(:, :, iTrial);
+    else
+        shifted_markers = [markers_x(iTrial, exp_2(iTrial).params.marker_order);
+                           markers_y(iTrial, exp_2(iTrial).params.marker_order)]...
+                           - centroid(:, :, iTrial);
+        % Find orientation of subsequent trials w.r.t. first trial GCS.
+         [regParams,Bfit,ErrorStats]=absor(reference_markers, shifted_markers);
+         exp_2(iTrial).params.R_1 = [regParams.R zeros(2,1); 0 0 1];
+    end
+end
 
 % [2] == Instantiate experimental motion primitive data analysis and plot
 % results.
@@ -94,3 +117,33 @@ motion_primitive_data = cat(3, delta_x_data, delta_y_data, delta_theta_data);
 
 save data/experiment_2_motion_primitives_corrected.mat motion_primitive_data
 
+
+if show_markers
+    figure
+    tiledlayout(2,3)
+    for iTrial = 1:5
+    
+    
+    % Plot first image of experiment video.
+    pictureName = sprintf('data/visualtracking/firstframe%02d.jpg', iTrial+6);
+    pic = imread(pictureName);
+    nexttile;
+    imshow(pic)
+    hold on
+    
+    % Plot labeled (i.e., numbered) markers on top of image.
+    markers_x(iTrial, :) = exp_2(iTrial).raw_data(1, 1:3:22);
+    markers_y(iTrial, :) = exp_2(iTrial).raw_data(1, 2:3:23);
+%     if iTrial ~=5
+    for m = 1:8
+        text(markers_x(iTrial, m), 400 - markers_y(iTrial, m), num2str(m),'Color','white','FontSize',14);
+%     end
+    end
+    
+    % Adjust size.
+    xlim([min(markers_x(iTrial, :))-100, max(markers_x(iTrial, :))+100]);
+    ylim([min(400 - markers_y(iTrial, :)) - 100, max(400 - markers_y(iTrial, :))+100]);
+    
+    
+end
+end

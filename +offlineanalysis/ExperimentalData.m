@@ -85,7 +85,12 @@ classdef ExperimentalData < handle
             
             % Extract video information.
             this.n_frames = length(raw_data);
-            this.timestamps = [0: (length(raw_data)-1)] / this.framerate; 
+            if size(raw_data, 2) > 3*this.n_markers + 2*9 + 2*3
+                time_index = 3*this.n_markers + 2*9 + 2*3+1;
+                this.timestamps = raw_data(: , time_index) - raw_data(1 , time_index);
+            else 
+                this.timestamps = [0: (length(raw_data)-1)] / this.framerate; 
+            end
             this.timestamp_1 = this.timestamps(this.frame_1);
             
             % Placeholders
@@ -109,13 +114,14 @@ classdef ExperimentalData < handle
             for i = 1:length(raw_data)
                 % Rotation matrices and translation vectors have already
                 % been calculated and stored in raw data file. Extract:
-                this.rotm_global(:, :, i) = reshape(raw_data(i, 37:45), [3,3]);
+                rg_idx = 3*this.n_markers+9+3+1;
+                this.rotm_global(:, :, i) = reshape(raw_data(i, rg_idx:rg_idx+8), [3,3]);
                 % Multiply by initial rotation matrix:
                 this.rotm_global(:, :, i) = this.R_1' * this.rotm_global(:, :, i);
-                this.t_global(:, i) = raw_data(i, 46:48)';
+                this.t_global(:, i) =  this.R_1' * raw_data(i, rg_idx+9:rg_idx+11)';
                 % Use these to calculate the pose of the robot center.
                 if i == 1
-                    pos_global(:, i) = [mean(this.marker_x_pos(1, :)); 
+                    pos_global(:, 1) =[mean(this.marker_x_pos(1, :)); 
                                        mean(this.marker_y_pos(1,:));
                                        mean(this.marker_z_pos(1,:))];
                 else
@@ -132,6 +138,7 @@ classdef ExperimentalData < handle
             % Convert from pixels to cm. 
             this.poses(1:2, :) = this.poses(1:2, :) * this.pixel_length;
             this.t_global = this.t_global * this.pixel_length;
+            this.poses(:,1) = this.poses(:,2);
         end
     end
 end

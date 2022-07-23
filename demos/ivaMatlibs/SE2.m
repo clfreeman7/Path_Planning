@@ -411,7 +411,7 @@ methods
   if (xi(3) < 0)
     thetaVals = -thetaVals;
   end
-  arcPts = rad*[cos(thetaVals) ; sin(thetaVals)]
+  arcPts = rad*[cos(thetaVals) ; sin(thetaVals)] ...
                 + repmat(basePt, [1, length(thetaVals)]);
   arcVec = diff(arcPts(:,end-1:end),1,2);
 
