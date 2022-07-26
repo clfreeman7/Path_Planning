@@ -14,7 +14,7 @@ classdef LocomotionTrajectory < handle
 
     poses;            % sequence of robot poses [x ; y ; theta]
 
-    gait_names;       % should be cell array (or array) of chars representing 
+    gait_names;       % cell array (or array) of chars representing 
                       %     sequence of gaits comprising trajectory (e.g. 'A', 'B', 'A', 'B')
 
     gait_types;       % sequence of +gaitdef.GaitType enumerations (TRANSLATE, ROTATE)
