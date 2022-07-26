@@ -1,0 +1,700 @@
+% ======================= MSoRoRTPlanner =======================
+%
+%  Motion primitive-based controlled trajectory planner. 
+%  Trajectory planning uses a grid world representation and takes a 
+%  'greedy' search-based approach, finding a sequence of 
+%  rotation-translation motion primitives that, collectively, 
+%  travel from start to goal. 
+%
+%  planning.MSoRoRTPlanner()
+%
+%  TODO:
+%   (X) helper method -> cost map synthesis from binary scenario image
+%   (X) set goal thresh/radius
+%   (3) MSoRo layer + demo script
+%   (4) visualization with MSoRo overlay
+%
+%  ====================== MSoRoRTPlanner ========================
+classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
+
+  properties (Access = protected)
+    rotation_gait;            % gaitdef.Gait instance modeling rotationally-dominant MSoRo gait
+    translation_gait;         % gaitdef.Gait instance modeling translationally-dominant MSoRo gait
+
+    % Visualization/debug aids
+    vis_config;     % (struct) visualization configuration
+    vis_hdls;       % (struct) visualization figure and plot handles
+  end
+
+
+  methods (Access = public)
+
+    % Constructor
+    function this = MSoRoRTPlanner( params )
+      assert( isfield(params, 'gridS'), '[RTGreedyPlanner::RTGreedyPlanner() Missing gridS parameter!]');
+
+      % == Super class constructor
+      this = this@pathGen.RTGreedyPlanner( params );
+
+      % == Subclass internal properties
+      this.rotation_gait = [];
+      this.translation_gait = [];
+
+      % == Initialize visualization state
+      this.vis_config.mode = 0;
+      this.vis_hdls = [];
+    end
+
+    % Add rotationally-dominant and translationally-dominant gaits for trajectory planning
+    %
+    % Input(s):
+    %   a_rot_gait:             Rotational gait model used for trajectory planning
+    %                           (class instance: gaitdef.Gait) 
+    %   a_trans_gait:           Translational gait model used for trajectory planning
+    %                           (class instance: gaitdef.Gait) 
+    % 
+    function setGaits( this, a_rot_gait, a_trans_gait )
+      assert ( isa(a_rot_gait, 'gaitdef.Gait'), ...
+                  '[MSoRoRTPlanner::setRotationGait()] Added gait must be of type gaitdef.Gait.');
+      assert ( isa(a_trans_gait, 'gaitdef.Gait'), ...
+                  '[MSoRoRTPlanner::setTranslationGait()] Added gait must be of type gaitdef.Gait.');
+
+      % Rotational gait model
+      this.rotation_gait = a_rot_gait;
+
+      rot_gait_period = a_rot_gait.len_gait*a_rot_gait.transition_time;
+
+      % Transcribe rotate gait data as motion primitive
+      rot_mp_params.name = a_rot_gait.gait_name;
+      rot_mp_params.body_vel_twist = a_rot_gait.Twist;
+      rot_mp_params.dt = rot_gait_period;
+      rot_mp_params.max_moves = floor(pi/2 / abs(rot_mp_params.body_vel_twist(3)*rot_mp_params.dt) );    % number of time periods to rotate up to 90 deg.
+      rotate_mp = pathGen.MotionPrimitive( rot_mp_params );
+      this.addRotationMP( rotate_mp );
+
+      % Translational gait model
+      this.translation_gait = a_trans_gait;
+
+      trans_speed = norm(a_trans_gait.Twist(1:2));
+      trans_gait_period = a_trans_gait.len_gait*a_trans_gait.transition_time;
+      grid_size = this.dg;
+      trans_dt = trans_gait_period*ceil(grid_size/(trans_speed*trans_gait_period));
+      trans_max_moves = floor(2*pi/a_rot_gait.Twist(3));
+
+      % Transcribe translate gait data as symmetrically-permutated motion primitives
+      %   Linear velocity rotated 0 deg.
+      trans_mp_params.name = sprintf('%s_R000', a_trans_gait.gait_name);
+      trans_mp_params.body_vel_twist = a_trans_gait.Twist;   % [ cm/s, cm/s, rad/s ]
+      trans_mp_params.dt = trans_dt;
+      trans_mp_params.max_moves = trans_max_moves;    % number of time periods to translate
+      trans_mp = pathGen.MotionPrimitive( trans_mp_params );
+      this.addTranslationMP( trans_mp );
+
+      %   Linear velocity rotated 90 deg.
+      trans_mp_params.name = sprintf('%s_R090', a_trans_gait.gait_name);
+      trans_mp_params.body_vel_twist = [-a_trans_gait.Twist(2), a_trans_gait.Twist(1), a_trans_gait.Twist(3)];   % [ cm/s, cm/s, rad/s ]
+      trans_mp_params.dt = trans_dt;
+      trans_mp_params.max_moves = trans_max_moves;    % number of time periods to translate
+      trans_mp = pathGen.MotionPrimitive( trans_mp_params );
+      this.addTranslationMP( trans_mp );
+
+      %   Linear velocity rotated 180 deg.
+      trans_mp_params.name = sprintf('%s_R180', a_trans_gait.gait_name);
+      trans_mp_params.body_vel_twist = [-a_trans_gait.Twist(1), -a_trans_gait.Twist(2), a_trans_gait.Twist(3)];   % [ cm/s, cm/s, rad/s ]
+      trans_mp_params.dt = trans_dt;
+      trans_mp_params.max_moves = trans_max_moves;    % number of time periods to translate
+      trans_mp = pathGen.MotionPrimitive( trans_mp_params );
+      this.addTranslationMP( trans_mp );
+
+      %   Linear velocity rotated 270 deg.
+      trans_mp_params.name = sprintf('%s_R270', a_trans_gait.gait_name);
+      trans_mp_params.body_vel_twist = [a_trans_gait.Twist(2), -a_trans_gait.Twist(1), a_trans_gait.Twist(3)];   % [ cm/s, cm/s, rad/s ]
+      trans_mp_params.dt = trans_dt;
+      trans_mp_params.max_moves = trans_max_moves;    % number of time periods to translate
+      trans_mp = pathGen.MotionPrimitive( trans_mp_params );
+      this.addTranslationMP( trans_mp );
+    end
+
+    % Plan controlled gait trajectory from starting SE(2) pose, 
+    % to goal position (i.e. E(2))
+    %
+    % Input(s):
+    %   a_start_pose:           planar starting pose
+    %                           (class instance: SE2) 
+    %   a_goal_position:             2-D goal position, [x, y]
+    % 
+    function [ trajectory_plan ] = planTrajectory( this, a_start_pose, a_goal_position )
+      assert ( isa(this.start_pose, 'SE2'), ...
+                  '[MSoRoRTPlanner::planTrajectory()] Specified start pose is not of type SE2.');
+      assert ( length(a_goal_position) == 2, ...
+                  '[MSoRoRTPlanner::planTrajectory()] Specified goal position is not length 2.');
+
+      this.pose2point( a_start_pose, a_goal_position );
+
+      mp_traj_plan = this.getTrajectoryPlan();
+
+      trajectory_plan = locomgmt.locotraj.LocomotionTrajectory();
+
+      trans_gait_period = a_trans_gait.len_gait*a_trans_gait.transition_time;
+
+      mp_plan_poses = mp_traj_plan.g_poses;
+      mp_plan_mps = mp_traj_plan.mps;
+      mp_plan_moves = mp_traj_plan.mp_moves;
+      mp_plan_mp_types = mp_traj_plan.mp_type;
+
+      out_timestamps = zeros(1, length(mp_plan_poses)+1);
+      out_poses = zeros(3, length(mp_plan_poses)+1);
+      out_gait_names = cell(1, length(mp_plan_poses));
+      out_gait_types = gaitdef.GaitType.empty(1, length(mp_plan_poses)); 
+      out_gait_durations = zeros(1, length(mp_plan_poses));
+      out_gait_directions = gaitdef.GaitDir.empty(1, length(mp_plan_poses));
+
+      out_timestamps(1) = 0;
+      out_poses(:, 1) = [ mp_plan_poses(1).getTranslation() ; mp_plan_poses(1).getAngle() ];
+      for ii = 1:length(mp_plan_mps)
+        out_poses(:, ii+1) = [ mp_plan_poses(ii).getTranslation() ; mp_plan_poses(ii).getAngle() ];
+
+        if ( mp_plan_mp_types(ii) == 'T' )  % translate gait
+          out_gait_types(ii) = gaitdef.GaitType.TRANSLATE;
+          out_gait_durations(ii) = mp_plan_moves(ii)*round(mp_plan_mps(ii).dt/trans_gait_period);
+
+          trans_mp_dir_str = mp_plan_mps(ii).name(end-2:end);     % translate symmetrically permutated gait (retain permutation indicator) 
+          out_gait_names{ii} = mp_plan_mps(ii).name(1:end-5);     % translate symmetrically permutated gait (remove permutation indicator)
+          if ( strcmp(trans_mp_dir_str, '000') )
+            out_gait_directions(ii) = gaitdef.GaitDir.NE;     % [TODO] no longer a relevant enumeration value
+          elseif ( strcmp(trans_mp_dir_str, '090') )
+            out_gait_directions(ii) = gaitdef.GaitDir.NW;
+          elseif ( strcmp(trans_mp_dir_str, '180') )
+            out_gait_directions(ii) = gaitdef.GaitDir.SW;
+          elseif ( strcmp(trans_mp_dir_str, '270') )
+            out_gait_directions(ii) = gaitdef.GaitDir.SE;
+          else
+            error('[MSoRoRTPlanner::planTrajectory()] Encountered translational gait name with invalid symmetric permutation indicator: %s.', mp_plan_mps(ii).name);
+          end
+
+        elseif ( mp_plan_mp_types(ii) == 'R' ) % rotate gait
+          out_gait_types(ii) = gaitdef.GaitType.ROTATE;
+          out_gait_durations(ii) = mp_plan_moves(ii);
+          out_gait_names{ii} = mp_plan_mps(ii).name;
+          if ( mp_plan_mps(ii).body_vel_twist(3) > 0 )
+            out_gait_directions(ii) = gaitdef.GaitDir.CCW;
+          else
+            out_gait_directions(ii) = gaitdef.GaitDir.CW;
+          end
+        else
+          error('[MSoRoRTPlanner::planTrajectory()] Encountered invalid mp_type value generated MP controlled trajectory plan: %s.', mp_plan_mp_types(ii));
+        end
+
+        out_timestamps(ii+1) = sum(out_gait_durations(1:ii));
+      end
+
+      trajectory_plan.timestamps = out_timestamps;       % sequence of timestamps
+      trajectory_plan.poses = out_poses;            % sequence of robot poses [x ; y ; theta]
+      trajectory_plan.gait_names = out_gait_names;            % cell array (or array) of chars representing
+      trajectory_plan.gait_types = out_gait_types;            % sequence of +gaitdef.GaitType enumerations (TRANSLATE, ROTATE)
+      trajectory_plan.gait_durations = out_gait_durations;    % corresponding gait durations (time or number of gait periods)
+      trajectory_plan.gait_directions = out_gait_directions;  % sequence of +gaitdef.GaitDir enumerations (NE, NW, SW, SE, CW, CCW)
+    end
+
+    % Enable/disable and configure visualization (debug aid)
+    %
+    % Input(s):
+    %   a_vis_config:           visualization config.
+    %     a_vis_config.mode     visualization mode (0 = none, 1 = animate)
+    %   a_fig_hdl:              (optional) figure handle
+    % 
+    function configureVisualization( this, a_vis_config, a_fig_hdl )
+      if ( nargin < 3 )
+        this.vis_hdls.fig_hdl = figure;
+      else
+        this.vis_hdls.fig_hdl = a_fig_hdl;
+      end
+
+      this.vis_config.mode = a_vis_config.mode;
+
+      % Animate search space exploration
+      if ( this.vis_config.mode == 1 )
+        figure(this.vis_hdls.fig_hdl);
+        hold on;
+          % Cost map
+          if ( ~isempty(this.costMap) )  % logic in case method called prior to cost map assignment
+            this.vis_hdls.costmap_img_hdl = imagesc(this.costMap);
+            this.vis_hdls.costmap_visualized = true;
+          else
+            this.vis_hdls.costmap_img_hdl = imagesc(zeros(1, 1));
+            this.vis_hdls.costmap_visualized = false;
+          end
+
+          % Explored trajectory segment end positions
+          this.vis_hdls.cand_traj_plt_hdl = plot(0, 0, 'ro');
+          this.vis_data.cand_traj_pnts = [];
+
+          % Identified optimal trajectory segment end positions
+          this.vis_hdls.opt_traj_plt_hdl = plot(0, 0, 'go', 'MarkerFaceColor', 'g', 'MarkerEdgeColor', 'g');
+          this.vis_data.opt_traj_pnts = [];
+
+          % Start and goal positions
+          this.vis_hdls.start_pos_hdl = plot(0, 0, 'gd', 'MarkerFaceColor', 'g', 'MarkerEdgeColor', 'g');
+          this.vis_hdls.start_visualized = false;
+          this.vis_hdls.goal_pos_hdl = plot(0, 0, 'kd', 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k');
+          this.vis_hdls.goal_rad_hdl = plot(0, 0, 'k-');
+          this.vis_hdls.goal_visualized = false;
+        hold off;
+        axis equal;
+        xlabel('X (grid units)'); ylabel('Y (grid units)');
+        this.vis_hdls.title_hdl = title(sprintf('Grid unit = %.4f cm', this.dg));  % TODO: units should be set per user
+        drawnow;
+      end
+    end
+
+  end %  methods (public)
+
+
+  methods (Access = protected)
+    
+    function genPath(this)
+      % Update visualization (debug aid)
+      this.updateVisualization( this.start_pose.getTranslation(), this.start_pose.getTranslation() );
+
+      num_trans_mp = length(this.translation_mp_list);
+      num_rot_mp = length(this.rotation_mp_list);
+      
+      % To-be-constructed sequence of rotation-translation MP pairs
+      % (initialize as empty struct array)
+      opt_rot_trans_seq = struct('cost2go', {}, 'rot_mp_model', {}, 'num_rot_move', {}, 'trans_mp_model', {}, ...
+                                  'num_trans_move', {}, 'g_seg_start', {}, ...
+                                  'g_rot_seg_end', {}, 'g_trans_seg_end', {});
+
+      g_init = this.start_pose;
+      while ( ~this.goalReached(g_init) )
+        % == Search for next rotation-translation MP sequence
+        opt_cost2go = Inf;
+        opt_rt_seq = [];          % current optimal rotation-translation MP sequence
+
+        % == Search over translational MPs
+        for ii_trans_mp = 1:num_trans_mp
+          trans_mp_model = this.translation_mp_list{ii_trans_mp};
+          trans_mp_twist = trans_mp_model.body_vel_twist;       % MP body velocity twist
+          trans_mp_dt = trans_mp_model.dt;                      % MP time discretization (duration of discrete movement)
+          max_moves_trans = trans_mp_model.max_moves;       % max number of discrete movements specified for MP
+  
+          % == Search over rotational MPs
+          for ii_rot_mp = 1:num_rot_mp                
+            rot_mp_model = this.rotation_mp_list{ii_rot_mp};
+            rot_mp_twist = rot_mp_model.body_vel_twist;       % MP body velocity twist
+            rot_mp_dt = rot_mp_model.dt;                      % MP time discretization (duration of discrete movement)
+            max_moves_rot = rot_mp_model.max_moves;         % max number of discrete movements specified for MP
+  
+            % == Search over discrete rotational movements, 1 -> max num. discrete MP movements
+            for jj_rot_move = 0:max_moves_rot
+              % Incremental rotational FK
+              g_rot_increm = SE2.exp(rot_mp_twist', rot_mp_dt*jj_rot_move);
+              g_init_rot = g_init*g_rot_increm;
+
+              % Update visualization (debug aid)
+              this.updateVisualization( g_init_rot.getTranslation(), [] );
+
+              if ( this.pointCollision(g_init_rot) )
+                if ( jj_rot_move == 0 )
+                  warning('[RTGreedyPlanner::genPath()] Collision found after zero rotations. This should not happen.');
+                end
+
+                break;
+              end
+
+              % == Search over number of discrete translational movements, 1 -> max num. discrete MP movements
+              g_init_rot_trans = g_init_rot;
+              for jj_trans_move = 1:max_moves_trans
+                % Incremental translational FK and collision check
+%                 [ collision, traj_poses ] = this.trajectoryCollision( g_init_rot, trans_mp_twist, trans_mp_dt*jj_trans_move, 10);%this.trans_collision_samps*jj_trans_move );
+                [ collision, traj_poses ] = this.trajectoryCollision( g_init_rot_trans, trans_mp_twist, trans_mp_dt, 1 );
+                g_init_rot_trans = SE2(traj_poses(1:2, end), traj_poses(3, end));
+  
+                % Update visualization (debug aid)
+                this.updateVisualization( g_init_rot_trans.getTranslation(), [] );
+
+                if ( collision ) 
+                  break;
+                end
+
+                candidate_position = this.world2grid(g_init_rot_trans.getTranslation());
+                candidate_cost2go = this.cost2go(floor(candidate_position(2)),floor(candidate_position(1)));
+                
+                if ( candidate_cost2go < opt_cost2go )
+                  opt_cost2go = candidate_cost2go;          % new optimal cost
+
+                  opt_rt_seq = [];
+                  opt_rt_seq.cost2go = opt_cost2go;
+
+                  opt_rt_seq.rot_mp_model = rot_mp_model;
+                  opt_rt_seq.num_rot_move = jj_rot_move;
+
+                  opt_rt_seq.trans_mp_model = trans_mp_model;
+                  opt_rt_seq.num_trans_move = jj_trans_move;
+
+                  opt_rt_seq.g_seg_start = g_init;              % trajectory segment starting SE2 pose, world coordinates
+                  opt_rt_seq.g_rot_seg_end = g_init_rot;      % rotational MP trajectory segment ending SE2 pose, world coordinates
+                  opt_rt_seq.g_trans_seg_end = g_init_rot_trans;      % translation MP trajectory segment ending SE2 pose, world coordinates
+                end
+              end % jj_trans_move
+
+            end % jj_rot_move
+  
+          end % ii_rot_mp
+  
+        end % ii_trans_mp
+
+        % Retain optimal rotation-translation MP sequence 
+        if ( isinf(opt_cost2go) )
+          warning('[RTGreedyPlanner::genPath()] Computed optimal cost = Inf. All searched rotation-translation MP sequences result in collision. Returning incomplete path!');
+          break;
+        else
+          % Update visualization (debug aid)
+          this.updateVisualization( [], opt_rt_seq.g_trans_seg_end.getTranslation() );
+
+          opt_rot_trans_seq(end+1) = opt_rt_seq;  % optimal rotation-translation sequence
+
+          g_init = opt_rt_seq.g_trans_seg_end;    % set world cooridnate pose for subsequent rotation-translation MP search
+        end
+
+      end % while (~goalReached())
+
+      % Compile result
+      this.compileResult(opt_rot_trans_seq);
+
+    end % function genPath()
+
+    % Compile output trajectory plan 
+    % Input(s):
+    %   a_opt_rot_trans_seq                     Custom (internal) structure containing 
+    %                                           data associated with planned sequence 
+    %                                           of rotation-translation MPs
+    %     a_opt_rot_trans_seq.cost2go
+    %     a_opt_rot_trans_seq.rot_mp_model
+    %     a_opt_rot_trans_seq.num_rot_move
+    %     a_opt_rot_trans_seq.trans_mp_model 
+    %     a_opt_rot_trans_seq.num_trans_move 
+    %     a_opt_rot_trans_seq.g_seg_start 
+    %     a_opt_rot_trans_seq.g_rot_seg_end
+    %     a_opt_rot_trans_seq.g_trans_seg_end
+    %
+    % Output(s):
+    %   None
+    %
+    function compileResult ( this, a_opt_rot_trans_seq )
+      this.motion_plan.cost_map = this.costMap;
+      this.motion_plan.gridS = this.gridS;
+      this.motion_plan.start_pose = this.start_pose;        % SE2
+      this.motion_plan.goal_position = this.xPath.xf;
+      this.motion_plan.goal_thresh = this.radStop;
+      this.motion_plan.optimal_rt_seq = a_opt_rot_trans_seq;  % TODO: redundant data, can remove as planner becomes thoroughly validated
+
+      this.motion_plan.g_poses(1) = this.start_pose;
+      mp_cnt = 0;
+      for ii = 1:length(a_opt_rot_trans_seq)
+        % Rotational MP trajectory segment
+        if ( a_opt_rot_trans_seq(ii).num_rot_move > 0 )     % Cull zero-rotation instances
+          mp_cnt = mp_cnt + 1;
+          this.motion_plan.g_poses(mp_cnt+1) = a_opt_rot_trans_seq(ii).g_rot_seg_end;      % SE2()
+          this.motion_plan.mps(mp_cnt) = a_opt_rot_trans_seq(ii).rot_mp_model;            % MotionPrimitive()
+          this.motion_plan.mp_durations(mp_cnt) = a_opt_rot_trans_seq(ii).num_rot_move;
+          this.motion_plan.mp_type(mp_cnt) = 'R';         % explicitly record MP classification
+        end
+
+        % Translational MP trajectory segment
+        mp_cnt = mp_cnt + 1;
+        this.motion_plan.g_poses(mp_cnt+1) = a_opt_rot_trans_seq(ii).g_trans_seg_end;      % SE2()
+        this.motion_plan.mps(mp_cnt) = a_opt_rot_trans_seq(ii).trans_mp_model;             % MotionPrimitive()
+        this.motion_plan.mp_durations(mp_cnt) = a_opt_rot_trans_seq(ii).num_trans_move;
+        this.motion_plan.mp_type(mp_cnt) = 'T';         % explicitly record MP classification
+      end
+    end
+
+    % Update visualization (debug aid) during search space exploration
+    % Input(s):
+    %   None
+    %
+    % Output(s):
+    %   None
+    %
+    function updateVisualization( this, a_candidate_pnts, a_optimal_pnts )
+      if ( this.vis_config.mode == 1 )
+        % Visualize cost map if not already done
+        if ( ~this.vis_hdls.costmap_visualized )
+          set(this.vis_hdls.costmap_img_hdl, 'CData', this.costMap);
+          this.vis_hdls.costmap_visualized = true;
+        end
+
+        % Start and goal positions
+        if ( ~this.vis_hdls.start_visualized )
+          start_grid_position = this.world2grid(this.start_pose.getTranslation());
+          set(this.vis_hdls.start_pos_hdl, 'XData', start_grid_position(1), 'YData', start_grid_position(2));
+          this.vis_hdls.start_visualized = true;
+        end
+        if ( ~this.vis_hdls.goal_visualized )
+          goal_grid_position = this.world2grid(this.xPath.xf);
+          set(this.vis_hdls.goal_pos_hdl, 'XData', goal_grid_position(1), 'YData', goal_grid_position(2));
+
+          theta_rad_samp = linspace(0, 2*pi, 60);     % Goal threshold radius/boundary
+          goal_boundary = [ cos(theta_rad_samp) ; sin(theta_rad_samp) ]*this.radStop/this.dg + goal_grid_position;
+          set(this.vis_hdls.goal_rad_hdl, 'XData', goal_boundary(1, :), 'YData', goal_boundary(2, :));
+          this.vis_hdls.goal_visualized = true;
+        end
+
+        % Update visualization data & plots
+        if ( ~isempty(a_candidate_pnts) )
+          this.vis_data.cand_traj_pnts = [ this.vis_data.cand_traj_pnts, this.world2grid(a_candidate_pnts) ];
+          set(this.vis_hdls.cand_traj_plt_hdl, 'XData', this.vis_data.cand_traj_pnts(1, :), 'YData', this.vis_data.cand_traj_pnts(2, :));
+        end
+        if ( ~isempty(a_optimal_pnts) )
+          this.vis_data.opt_traj_pnts = [ this.vis_data.opt_traj_pnts, this.world2grid(a_optimal_pnts) ];
+          set(this.vis_hdls.opt_traj_plt_hdl , 'XData', this.vis_data.opt_traj_pnts(1, :), 'YData', this.vis_data.opt_traj_pnts(2, :));
+        end
+
+        drawnow;
+      end
+    end
+    
+    % Check whether pose within threshold distance of goal position
+    % Input(s):
+    %   a_g:            planar pose (SE2 instance or [x, y] vector)
+    %
+    % Output(s):
+    %   result:         (boolean)
+    %
+    function [ result]  = goalReached( this, a_g )
+      if ( isa(a_g, 'SE2') )
+        x = a_g.getTranslation();
+      elseif ( length(a_g) == 2 )
+        x = a_g;
+      else
+        error('[RTGreedyPlanner::goalReached()] Invalid input pose/position. Must be of type SE2 or 2-vector.');
+      end
+
+      result = norm(x - this.xPath.xf) <= this.radStop;
+    end
+
+    % Check collision along a (lightly-sampled) trajectory, associated with a
+    % fixed body velocity twist
+    %
+    % Input(s):
+    %   a_g_start:            starting pose (SE2 instance)
+    %   a_twist:              velocity twist (3-vector)
+    %   a_duration:           trajectory duration (sec.)
+    %   a_num_samp_pnts:      number of sampled trajectory points
+    % 
+    % Output(s):
+    %   collision:            trajectory collision result (boolean)
+    %   traj_poses:           3xN vector, sampled trajectory ending with either: 
+    %                           first colliding trajectory pose,
+    %                             OR
+    %                           final collision-free trajectory pose after a_duration sec.
+    % 
+    function [ collision, traj_poses ] = trajectoryCollision( this, a_g_start, a_twist, a_duration, a_num_samp_pnts )
+      assert ( isa(a_g_start, 'SE2'), ...
+                  '[RTGreedyPlanner::trajectoryCollision()] Trajecotry starting pose must be an SE2 instance!');
+      assert ( length(a_twist) == 3, ...
+                  '[RTGreedyPlanner::trajectoryCollision()] Invalid input twist length!');
+
+      samp_dur = a_duration/a_num_samp_pnts;
+
+      collision = false;
+      traj_poses = zeros(3, a_num_samp_pnts);
+      for ii = 1:a_num_samp_pnts
+        g_twist = SE2.exp(a_twist', samp_dur*ii);            % relative pose change from twist
+        g_traj_samp = a_g_start*g_twist;                    % sampled trajectory pose
+
+        traj_poses(:, ii) = [ g_traj_samp.getTranslation() ; g_traj_samp.getAngle() ];
+
+        if ( this.pointCollision( g_traj_samp ) )
+          collision = true;
+          break;
+        end
+      end
+    end    
+
+    % Cost map-based obstacle collision check for single point
+    %
+    % Input(s):
+    %   a_g:            planar pose (SE2 instance or [x, y] vector)
+    %
+    % Output(s):
+    %   collision:      (boolean)
+    %
+    function [ collision ] = pointCollision( this, a_g )
+      if ( isa(a_g, 'SE2') )
+        world_position = a_g.getTranslation();
+      elseif ( length(a_g) == 2 )
+        world_position = a_g;
+      else
+        error('[RTGreedyPlanner::pointCollision()] Invalid input pose/position. Must be of type SE2 or 2-vector.');
+      end
+
+      grid_position = this.world2grid(world_position);
+
+      collision = this.costMap(floor(grid_position(2)), floor(grid_position(1))) > this.obstacle_threshold;
+    end 
+
+    % Set parameter value for class-instance, based on user specified 
+    % values (or default if property doesn't exist as struct field)
+    function setProperty(this, source_struct, param_name, def_val)
+      if ( nargin < 4 )
+        required = true;
+      else
+        required = false;
+      end
+
+      if ( isfield(source_struct, param_name) )
+        this.(param_name) = source_struct.(param_name);
+      else
+        if ( ~required )
+          this.(param_name) = def_val;
+          warning('[RTGreedyPlanner::setProperty()] Setting parameter (%s) to default value.', param_name);
+        else
+          error('[RTGreedyPlanner::setProperty()] Missing parameter: %s.', param_name);
+        end
+      end
+    end
+
+  end % methods (protected)
+    
+
+  methods (Static)
+
+    % Construct cost map from binary obstacle image
+    %
+    % Input(s):
+    %   a_img                       binary image (1 = obstacle)
+    %   a_img_scaling               scaling factor (image size -> grid world size)
+    %   a_rad_falloff               correlation-based image filter radius (grid units); 
+    %                                 accomplishes radial cost decay around obstacle locations 
+    % 
+    function [ cf ] = binImg2CostMap( a_img, a_img_scaling, a_rad_falloff )
+      obstacle_cost = 25000.0;        % TODO: hard-coded
+
+      img = imresize(double(a_img), a_img_scaling);
+      img_dims = size(img);
+      max_img_dim = max(img_dims);
+
+      % Set up grid march world and obstacle-based cost map
+      cf = ones(max_img_dim);       % TODO: Michael made cost map square,though input image is not -> reason why?
+
+      cf(1:img_dims(1),1:img_dims(2)) = (flipud(img).*obstacle_cost)+1;
+
+      % Boundary obstacles
+      cf(1:1,1:img_dims(2)) = obstacle_cost;
+      cf(img_dims(1):img_dims(1),1:img_dims(2)) = obstacle_cost;
+
+      cf(1:img_dims(1),1:1) = obstacle_cost;
+      cf(1:img_dims(1),img_dims(2):img_dims(2)) = obstacle_cost;
+                
+      % Apply radial cost fall-off for obstacles
+      corr_filter = ones(a_rad_falloff)/(a_rad_falloff)^2;
+      cf = imfilter(imfilter(cf, corr_filter, 'replicate'), corr_filter, 'replicate')+cf;
+    end
+
+    % Plot rotation-translation-paradigmed trajectory plan
+    %
+    % Input(s):
+    %   a_motion_plan:                visualization config.
+    %     motion_plan.cost_map          cost map
+    %     motion_plan.start_pose        starting SE2 pose  
+    %     motion_plan.goal_position     goal position, [x ; y]
+    %     motion_plan.g_poses           discrete-time trajectory poses
+    %     motion_plan.optimal_rt_seq    rotation-translation sequences to
+    %                                   acccomplishing planned trajectory poses
+    %     motion_plan.goal_thresh       goal radius
+    %     motion_plan.dg                cost map grid size
+    %   a_fig_hdl:                    (optional) figure handle
+    % 
+    function plotRTTrajectory( a_motion_plan, a_fig_hdl )
+      if ( nargin < 3 )
+        figure;
+      else
+        figure(a_fig_hdl);
+      end
+
+      a_cost_map = a_motion_plan.cost_map;
+      a_gridS = a_motion_plan.gridS;
+      a_dg = a_gridS.dg;
+      a_start_pose = a_motion_plan.start_pose;
+      a_goal_position = a_motion_plan.goal_position;
+      a_goal_thresh = a_motion_plan.goal_thresh;
+      a_g_poses = a_motion_plan.g_poses;
+      a_mp_type = a_motion_plan.mp_type;
+      a_mp_list = a_motion_plan.mps;            % MotionPrimitive()
+      a_mp_durations = a_motion_plan.mp_durations;
+
+      % Compute world2grid mapping
+      for ii=1:length(a_gridS.size)
+        a_grids{ii} = a_gridS.cmin(ii) + a_dg*[0:(a_gridS.size(ii)-1)];
+      end
+      for ii=1:length(a_gridS.size)
+        map_w2g{ii} = griddedInterpolant(a_grids{ii},[1:a_gridS.size(ii)]);
+      end
+      map_world2grid = @(x) [map_w2g{1}(x(1,:)); map_w2g{2}(x(2,:))];
+
+      hold on;
+        % Cost map
+        imagesc(a_cost_map);
+
+        % Start and goal positions
+        start_grid_position = map_world2grid(a_start_pose.getTranslation());
+        plot(start_grid_position(1), start_grid_position(2), 'md', 'MarkerFaceColor', 'm', 'MarkerEdgeColor', 'm');
+
+        goal_grid_position = map_world2grid(a_goal_position);
+        plot(goal_grid_position(1), goal_grid_position(2), 'kd', 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k');
+
+        theta_rad_samp = linspace(0, 2*pi, 60);     % Goal threshold radius/boundary
+        goal_boundary = [ cos(theta_rad_samp) ; sin(theta_rad_samp) ]*a_goal_thresh/a_dg + goal_grid_position;
+        plot(goal_boundary(1, :), goal_boundary(2, :), 'k--', 'LineWidth', 1.5);
+
+        % Optimal trajectory segments end positions
+        traj_grid_positions = zeros(2, length(a_g_poses)-1);
+        marker_clrs = zeros(length(a_g_poses)-1, 3);
+        for ii = 2:length(a_g_poses)
+          if ( a_mp_type(ii-1) == 'R' )
+            marker_clrs(ii-1, :) = [1, 0, 0];   % rotation = red
+          elseif ( a_mp_type(ii-1) == 'T' )
+            marker_clrs(ii-1, :) = [0, 1, 0];   % translation = green
+          else
+            error('[RTGreedyPlanner::plot_trajectory()] Invalid MP type in input motion plan: %s.', a_mp_type(ii));
+          end
+          traj_grid_positions(:, ii-1) = map_world2grid(a_g_poses(ii).getTranslation());
+        end
+        scatter(traj_grid_positions(1,:), traj_grid_positions(2, :), 40, marker_clrs, 'filled');
+
+        % Plot trajectory segments for each MP
+        num_samples = 50;
+        mp_grid_traj = zeros(2, num_samples+1); % plus starting position
+        for ii = 1:length(a_mp_type)
+          mp_twist = a_mp_list(ii).body_vel_twist;
+          mp_dt = a_mp_list(ii).dt;
+          mp_dur = a_mp_durations(ii);
+          g_0 = a_g_poses(ii);
+          mp_grid_traj(:, 1) = map_world2grid(g_0.getTranslation());
+          for jj = 1:num_samples
+            g_twist = SE2.exp(mp_twist', mp_dur*mp_dt/num_samples);
+            g_next = g_0*g_twist;
+            mp_grid_traj(:, jj+1) = map_world2grid(g_next.getTranslation());
+            g_0 = g_next;
+          end
+          if ( a_mp_type(ii) == 'R' )       % rotation MP (red)
+            plot(mp_grid_traj(1, :), mp_grid_traj(2, :), 'r-');
+          elseif ( a_mp_type(ii) == 'T' )   % translation MP (green)
+            plot(mp_grid_traj(1, :), mp_grid_traj(2, :), 'g-');
+          else
+            error('[RTGreedyPlanner::plot_trajectory()] Invalid MP type in input motion plan: %s.', a_mp_type(ii));
+          end
+        end
+  
+      hold off;
+      axis equal;
+      xlabel('X (grid units)'); ylabel('Y (grid units)');
+      title(sprintf('Grid unit = %.4f cm', a_dg));  % TODO: units should be set per user
+      drawnow;
+    end
+
+  end % methods (static)
+
+end % classdef
