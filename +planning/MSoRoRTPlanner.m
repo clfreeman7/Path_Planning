@@ -243,7 +243,7 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
 
   methods (Access = private)
 
-    % Transcribe MP-based controlled trajectory outcome as a MSoRo gait-based controlled trajectory
+    % Transcribe MP-based controlled trajectory as a MSoRo gait-based controlled trajectory
     %
     % Input(s):
     %   a_mp_trajectory:                MP-based controlled trajectory (custom struct) 
