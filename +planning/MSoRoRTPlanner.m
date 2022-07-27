@@ -157,9 +157,9 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
     %   a_goal_position:        2-D goal position, [x, y]
     % 
     % Output(s):
-    %   trajectory_plan:        locomgmt.locotraj.LocomotionTrajectory() instance
+    %   gait_trajectory_plan:        gait-based trajectory plan (locomgmt.locotraj.LocomotionTrajectory() instance) 
     % 
-    function [ trajectory_plan ] = planTrajectory( this, a_start_pose, a_goal_position )
+    function [ gait_trajectory_plan ] = planTrajectory( this, a_start_pose, a_goal_position )
       assert ( isa(this.start_pose, 'SE2'), ...
                   '[MSoRoRTPlanner::planTrajectory()] Specified start pose is not of type SE2.');
       assert ( length(a_goal_position) == 2, ...
@@ -181,70 +181,10 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
 
       % Plan the underlying MP-based controlled trajectory
       this.pose2point( a_start_pose, a_goal_position );   % call super class trajectory planner
-      mp_traj_plan = this.getTrajectoryPlan();  % retrieve MP controlled trajectory plan from super class
+      mp_trajectory_plan = this.getTrajectoryPlan();  % retrieve MP controlled trajectory plan from super class
 
       % Transcribe MP-based controlled trajectory outcome as a MSoRo gait-based controlled trajectory
-      trajectory_plan = locomgmt.locotraj.LocomotionTrajectory();
-
-      trans_gait_period = this.translation_gait.len_gait*this.translation_gait.transition_time;
-
-      mp_plan_poses = mp_traj_plan.g_poses;
-      mp_plan_mps = mp_traj_plan.mps;
-      mp_plan_moves = mp_traj_plan.mp_moves;
-      mp_plan_mp_types = mp_traj_plan.mp_type;
-
-      out_timestamps = zeros(1, length(mp_plan_poses)+1);
-      out_poses = zeros(3, length(mp_plan_poses)+1);
-      out_gait_names = cell(1, length(mp_plan_poses));
-      out_gait_types = gaitdef.GaitType.empty(1, 0); 
-      out_gait_durations = zeros(1, length(mp_plan_poses));
-      out_gait_directions = gaitdef.GaitDir.empty(1, 0);
-
-      out_timestamps(1) = 0;
-      out_poses(:, 1) = [ mp_plan_poses(1).getTranslation() ; mp_plan_poses(1).getAngle() ];
-      for ii = 1:length(mp_plan_mps)
-        out_poses(:, ii+1) = [ mp_plan_poses(ii).getTranslation() ; mp_plan_poses(ii).getAngle() ];
-
-        if ( mp_plan_mp_types(ii) == 'T' )  % translate gait
-          out_gait_types(ii) = gaitdef.GaitType.TRANSLATE;
-          out_gait_durations(ii) = mp_plan_moves(ii)*round(mp_plan_mps(ii).dt/trans_gait_period);
-
-          trans_mp_dir_str = mp_plan_mps(ii).name(end-2:end);     % translate symmetrically permutated gait (retain permutation indicator) 
-          out_gait_names{ii} = mp_plan_mps(ii).name(1:end-5);     % translate symmetrically permutated gait (remove permutation indicator)
-          if ( strcmp(trans_mp_dir_str, '000') )
-            out_gait_directions(ii) = gaitdef.GaitDir.NE;     % [TODO] no longer a relevant enumeration value
-          elseif ( strcmp(trans_mp_dir_str, '090') )
-            out_gait_directions(ii) = gaitdef.GaitDir.NW;
-          elseif ( strcmp(trans_mp_dir_str, '180') )
-            out_gait_directions(ii) = gaitdef.GaitDir.SW;
-          elseif ( strcmp(trans_mp_dir_str, '270') )
-            out_gait_directions(ii) = gaitdef.GaitDir.SE;
-          else
-            error('[MSoRoRTPlanner::planTrajectory()] Encountered translational gait name with invalid symmetric permutation indicator: %s.', mp_plan_mps(ii).name);
-          end
-
-        elseif ( mp_plan_mp_types(ii) == 'R' ) % rotate gait
-          out_gait_types(ii) = gaitdef.GaitType.ROTATE;
-          out_gait_durations(ii) = mp_plan_moves(ii);
-          out_gait_names{ii} = mp_plan_mps(ii).name;
-          if ( mp_plan_mps(ii).body_vel_twist(3) > 0 )
-            out_gait_directions(ii) = gaitdef.GaitDir.CCW;
-          else
-            out_gait_directions(ii) = gaitdef.GaitDir.CW;
-          end
-        else
-          error('[MSoRoRTPlanner::planTrajectory()] Encountered invalid mp_type value generated MP controlled trajectory plan: %s.', mp_plan_mp_types(ii));
-        end
-
-        out_timestamps(ii+1) = sum(out_gait_durations(1:ii));
-      end
-
-      trajectory_plan.timestamps = out_timestamps;            % sequence of timestamps
-      trajectory_plan.poses = out_poses;                      % sequence of robot poses [x ; y ; theta]
-      trajectory_plan.gait_names = out_gait_names;            % cell array (or array) of chars representing
-      trajectory_plan.gait_types = out_gait_types;            % sequence of +gaitdef.GaitType enumerations (TRANSLATE, ROTATE)
-      trajectory_plan.gait_durations = out_gait_durations;    % corresponding gait durations (time or number of gait periods)
-      trajectory_plan.gait_directions = out_gait_directions;  % sequence of +gaitdef.GaitDir enumerations (NE, NW, SW, SE, CW, CCW)
+      gait_trajectory_plan = this.mp2GaitTrajectory( mp_trajectory_plan );
     end
 
     % Enable/disable and configure visualization (debug aid)
@@ -301,9 +241,96 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
   end %  methods (public)
 
 
+  methods (Access = private)
+
+    % Transcribe MP-based controlled trajectory outcome as a MSoRo gait-based controlled trajectory
+    %
+    % Input(s):
+    %   a_mp_trajectory:                MP-based controlled trajectory (custom struct) 
+    %     a_mp_trajectory.g_poses         array (sequence) of poses (SE2() instances)
+    %     a_mp_trajectory.mps             array (sequence) of MPs (pathGen.MotionPrimitive() instances)   
+    %     a_mp_trajectory.mp_moves        array (sequence) of MP moves (integers)  
+    %     a_mp_trajectory.mp_type         array (sequence) of MP classifications (strings): 
+    %                                               'T' for translation or 'R' for rotation 
+    %
+    % Output(s):
+    %   gait_trajectory:                gait-based controlled trajectory (locomgmt.locotraj.LocomotionTrajectory instance) 
+    %
+    function [ gait_trajectory ] = mp2GaitTrajectory( this, a_mp_trajectory )
+      % Break-out input struct fields
+      mp_plan_poses = a_mp_trajectory.g_poses;
+      mp_plan_mps = a_mp_trajectory.mps;
+      mp_plan_moves = a_mp_trajectory.mp_moves;
+      mp_plan_mp_types = a_mp_trajectory.mp_type;
+
+      % Output gait-based trajectory data type
+      gait_trajectory = locomgmt.locotraj.LocomotionTrajectory();
+
+      % Transcribe MP-based trajectory -> gait-based trajectory
+      trans_gait_period = this.translation_gait.len_gait*this.translation_gait.transition_time;
+      rot_gait_period = this.rotation_gait.len_gait*this.rotation_gait.transition_time;
+
+      out_timestamps = zeros(1, length(mp_plan_mps)+1);
+      out_poses = zeros(3, length(mp_plan_mps)+1);
+      out_gait_names = cell(1, length(mp_plan_mps));
+      out_gait_types = gaitdef.GaitType.empty(1, 0); 
+      out_gait_durations = zeros(1, length(mp_plan_mps));
+      out_gait_directions = gaitdef.GaitDir.empty(1, 0);
+
+      out_timestamps(1) = 0;
+      out_poses(:, 1) = [ mp_plan_poses(1).getTranslation() ; mp_plan_poses(1).getAngle() ];
+      for ii = 1:length(mp_plan_mps)
+        out_poses(:, ii+1) = [ mp_plan_poses(ii).getTranslation() ; mp_plan_poses(ii).getAngle() ];
+
+        if ( mp_plan_mp_types(ii) == 'T' )  % translate gait
+          out_gait_types(ii) = gaitdef.GaitType.TRANSLATE;
+          out_gait_durations(ii) = mp_plan_moves(ii)*round(mp_plan_mps(ii).dt/trans_gait_period);
+          out_timestamps(ii+1) = out_timestamps(ii) + out_gait_durations(ii)*trans_gait_period;
+
+          trans_mp_dir_str = mp_plan_mps(ii).name(end-2:end);     % translate symmetrically permutated gait (retain permutation indicator) 
+          out_gait_names{ii} = mp_plan_mps(ii).name(1:end-5);     % translate symmetrically permutated gait (remove permutation indicator)
+          if ( strcmp(trans_mp_dir_str, '000') )
+            out_gait_directions(ii) = gaitdef.GaitDir.NE;     % [TODO] no longer seems to be a relevant enumeration value
+          elseif ( strcmp(trans_mp_dir_str, '090') )
+            out_gait_directions(ii) = gaitdef.GaitDir.NW;
+          elseif ( strcmp(trans_mp_dir_str, '180') )
+            out_gait_directions(ii) = gaitdef.GaitDir.SW;
+          elseif ( strcmp(trans_mp_dir_str, '270') )
+            out_gait_directions(ii) = gaitdef.GaitDir.SE;
+          else
+            error('[MSoRoRTPlanner::mp2GaitTrajectory()] Encountered translational gait name with invalid symmetric permutation indicator: %s.', mp_plan_mps(ii).name);
+          end
+
+        elseif ( mp_plan_mp_types(ii) == 'R' ) % rotate gait
+          out_gait_types(ii) = gaitdef.GaitType.ROTATE;
+          out_gait_durations(ii) = mp_plan_moves(ii);
+          out_timestamps(ii+1) = out_timestamps(ii) + out_gait_durations(ii)*rot_gait_period;
+
+          out_gait_names{ii} = mp_plan_mps(ii).name;
+          if ( mp_plan_mps(ii).body_vel_twist(3) > 0 )
+            out_gait_directions(ii) = gaitdef.GaitDir.CCW;
+          else
+            out_gait_directions(ii) = gaitdef.GaitDir.CW;
+          end
+        else
+          error('[MSoRoRTPlanner::mp2GaitTrajectory()] Encountered invalid mp_type value generated MP controlled trajectory plan: %s.', mp_plan_mp_types(ii));
+        end
+      end
+
+      gait_trajectory.timestamps = out_timestamps;            % sequence of timestamps
+      gait_trajectory.poses = out_poses;                      % sequence of robot poses [x ; y ; theta]
+      gait_trajectory.gait_names = out_gait_names;            % cell array (or array) of chars representing
+      gait_trajectory.gait_types = out_gait_types;            % sequence of +gaitdef.GaitType enumerations (TRANSLATE, ROTATE)
+      gait_trajectory.gait_durations = out_gait_durations;    % corresponding number of gait periods
+      gait_trajectory.gait_directions = out_gait_directions;  % sequence of +gaitdef.GaitDir enumerations (NE, NW, SW, SE, CW, CCW)
+    end
+
+  end %  methods (private)
+
+
   methods (Static)
 
-    % Plot rotation-translation-paradigmed trajectory plan
+    % Plot rotation-translation-paradigmed trajectory plan [TODO]
     %
     % Input(s):
     %   a_motion_plan:                visualization config.
