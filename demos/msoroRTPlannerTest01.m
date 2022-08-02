@@ -44,7 +44,7 @@ set(groot, 'defaultTextInterpreter','latex');
 switch world
   case 1 %orange
     if ( strcmp(world_construct_method, 'actual') )
-      world_mat_file = '~/ivaMatlibs/control/testing/inputs/World1Dimensions.mat';
+      world_mat_file = 'data/World1Dimensions.mat';
       world_img = load(world_mat_file).obstacle_scenario.scenario_img_clean;
     elseif ( strcmp(world_construct_method, 'ideal') )
       world_img = zeros(189, 336);
@@ -58,7 +58,7 @@ switch world
     goal_position = [290 ; 150]*gridS.dg;
   case 2 %black
     if ( strcmp(world_construct_method, 'actual') )
-      world_mat_file = '~/ivaMatlibs/control/testing/inputs/World2Dimensions.mat';
+      world_mat_file = 'data/World2Dimensions.mat';
       world_img = load(world_mat_file).obstacle_scenario.scenario_img_clean;
     elseif ( strcmp(world_construct_method, 'ideal') )
       world_img = zeros(189, 336);
@@ -71,7 +71,7 @@ switch world
     goal_position = [290 ; 150]*gridS.dg;
   case 3 %blue
     if ( strcmp(world_construct_method, 'actual') )
-      world_mat_file = '~/ivaMatlibs/control/testing/inputs/World3Dimensions.mat';
+      world_mat_file = 'data/World3Dimensions.mat';
       world_img = load(world_mat_file).obstacle_scenario.scenario_img_clean;
     elseif ( strcmp(world_construct_method, 'ideal') )
       world_img = zeros(189, 336);
@@ -87,7 +87,7 @@ switch world
     goal_position = [298 ; 150]*gridS.dg;
   case 4 %brown
     if ( strcmp(world_construct_method, 'actual') )
-      world_mat_file = '~/ivaMatlibs/control/testing/inputs/World4Dimensions.mat';
+      world_mat_file = 'data/World4Dimensions.mat';
       world_img = load(world_mat_file).obstacle_scenario.scenario_img_clean;
     elseif ( strcmp(world_construct_method, 'ideal') )
       world_img = zeros(189, 336);
