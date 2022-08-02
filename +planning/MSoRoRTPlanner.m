@@ -14,16 +14,26 @@
 %                                     Web page: https://github.gatech.edu/ivaMatlibs/control/tree/gm_Mwork
 %                                     Git URL: git@github.gatech.edu:ivaMatlibs/control.git (branch: gm_Mwork) 
 %
+%     ivaMatlibs/groups           (SE2 class)
+%                                 ivaMatlibs/groups repository: 
+%                                     Web page: https://github.gatech.edu/ivaMatlibs/groups
+%                                     Git URL: git@github.gatech.edu:ivaMatlibs/groups.git (branch: master) 
+%
+%     ivalibs/fastmarch           (fastmarch class)
+%                                 ivaMatlibs/fastmarch repository: 
+%                                     Web page: https://github.gatech.edu/ivalibs/fastmarch
+%                                     Git URL: git@github.gatech.edu:ivalibs/fastmarch.git (branch: master) 
+%
 %  ====================== MSoRoRTPlanner ========================
 classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
 
   properties (Access = protected)
-    rotation_gait;            % gaitdef.Gait instance modeling rotationally-dominant MSoRo gait
-    translation_gait;         % gaitdef.Gait instance modeling translationally-dominant MSoRo gait
+    rotation_gait;        % gaitdef.Gait instance modeling rotationally-dominant MSoRo gait
+    translation_gait;     % gaitdef.Gait instance modeling translationally-dominant MSoRo gait
 
     % Internal state
-    gaits_set;
-    scenario_set;
+    gaits_set;            % boolean flag - signals gaits have been set
+    scenario_set;         % boolean flag - signals scenario has been set
   end
 
 
@@ -31,7 +41,7 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
 
     % Constructor
     function this = MSoRoRTPlanner( params )
-      assert( isfield(params, 'gridS'), '[MSoRoRTPlanner::RTGreedyPlanner()] Missing gridS parameter!');
+      assert( isfield(params, 'gridS'), '[MSoRoRTPlanner::MSoRoRTPlanner()] Missing gridS parameter!');
 
       % == Super class constructor
       this = this@pathGen.RTGreedyPlanner( params );
@@ -435,15 +445,13 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
       hold off;
       axis equal;
       xlabel('X (cm)'); ylabel('Y (cm)');
-      disp_xlim_cm = scen_lims(1) - mod(scen_lims(1), 100);
-      disp_ylim_cm = scen_lims(2) - mod(scen_lims(2), 100);
-      disp_xlim_grid = disp_xlim_cm/px2cm;
-      disp_ylim_grid = disp_ylim_cm/px2cm;
-      disp_xticks_cm = 0:100:disp_xlim_cm; disp_yticks_cm = 0:100:disp_ylim_cm; 
+      disp_xtick_max_cm = scen_lims(1) - mod(scen_lims(1), 100);
+      disp_ytick_max_cm = scen_lims(2) - mod(scen_lims(2), 100);
+      disp_xticks_cm = 0:100:disp_xtick_max_cm; disp_yticks_cm = 0:100:disp_ytick_max_cm; 
       disp_xticks_grid = disp_xticks_cm/px2cm; disp_yticks_grid = disp_yticks_cm/px2cm; 
-      xlim([0, disp_xlim_grid]); ylim([0, disp_ylim_grid]); 
+      xlim([0, scen_lims(2)]/px2cm); ylim([0, scen_lims(1)]/px2cm); 
       xticks(disp_xticks_grid); yticks(disp_yticks_grid);
-      xticklabels(disp_xticks_cm); yticks(disp_yticks_cm);
+      xticklabels(disp_xticks_cm); yticklabels(disp_yticks_cm);
       legend([start_mrkr_hdl, goal_mrkr_hdl, rot_traj_plt_hdl, trans_traj_plt_hdl, bdy_frm_xaxis_hdl], ...
               {'Start', 'Goal', 'Rotate', 'Translate', 'Body Frame $x$-axis'}, ...
               'Location', 'NorthEast', 'Interpreter', 'latex');
