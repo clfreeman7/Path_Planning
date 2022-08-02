@@ -90,7 +90,7 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
       trans_gait_period = a_trans_gait.len_gait*a_trans_gait.transition_time;
       grid_size = this.dg;
       trans_dt = trans_gait_period*ceil(grid_size/(trans_speed*trans_gait_period));
-      trans_max_moves = floor(2*pi/a_rot_gait.Twist(3));
+      trans_max_moves = floor(3/2*pi/a_rot_gait.Twist(3));
 
       % Transcribe translate gait data as symmetrically-permutated motion primitives
       %   Linear velocity rotated 0 deg.
@@ -283,7 +283,7 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
       out_timestamps(1) = 0;
       out_poses(:, 1) = [ mp_plan_poses(1).getTranslation() ; mp_plan_poses(1).getAngle() ];
       for ii = 1:length(mp_plan_mps)
-        out_poses(:, ii+1) = [ mp_plan_poses(ii).getTranslation() ; mp_plan_poses(ii).getAngle() ];
+        out_poses(:, ii+1) = [ mp_plan_poses(ii+1).getTranslation() ; mp_plan_poses(ii+1).getAngle() ];
 
         if ( mp_plan_mp_types(ii) == 'T' )  % translate gait
           out_gait_types(ii) = gaitdef.GaitType.TRANSLATE;
@@ -333,106 +333,203 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
 
   methods (Static)
 
-    % Plot rotation-translation-paradigmed trajectory plan [TODO]
+    % Plot MSoRo rotation-translation gait-based trajectory plan
     %
     % Input(s):
-    %   a_motion_plan:                visualization config.
-    %     motion_plan.cost_map          cost map
-    %     motion_plan.start_pose        starting SE2 pose  
-    %     motion_plan.goal_position     goal position, [x ; y]
-    %     motion_plan.g_poses           discrete-time trajectory poses
-    %     motion_plan.optimal_rt_seq    rotation-translation sequences to
-    %                                   acccomplishing planned trajectory poses
-    %     motion_plan.goal_thresh       goal radius
-    %     motion_plan.dg                cost map grid size
-    %   a_fig_hdl:                    (optional) figure handle
+    %   a_gait_trajectory:              gait-based controlled trajectory (locomgmt.locotraj.LocomotionTrajectory instance) 
+    %   a_gait_library:                 array of gaitdef.Gait instances
+    %   a_scen_props:                   scenario image (e.g. color, binary or cost map image)
+    %     a_scen_props.image              scenario image (color, binary, cost map image) 
+    %     a_scen_props.px2cm              pixel-to-cm conversion for image
+    %     a_scen_props.radStop            goal threshold (radius in world units)
+    %     a_scen_props.startPose          starting pose ([x ; y ; \theta], world coordinates) 
+    %     a_scen_props.goalPosition       goal position ([x ; y], world coordinates) 
+    %   a_fig_hdl:                      (optional) figure handle
+    %   a_msoro_outline                 MSoRo outline coordinates
     % 
-    function plotTrajectory( a_motion_plan, a_fig_hdl )
-      if ( nargin < 3 )
+    function plotTrajectory( a_gait_trajectory, a_scen_props, a_gait_library, a_fig_hdl, a_msoro_outline )
+%       if ( nargin < 5 )
+%         a_msoro_outline;
+%       else
+%         a_msoro_outline = [];
+%       end
+      if ( nargin < 4 )
         figure;
       else
         figure(a_fig_hdl);
       end
 
-      a_cost_map = a_motion_plan.cost_map;
-      a_gridS = a_motion_plan.gridS;
-      a_dg = a_gridS.dg;
-      a_start_pose = a_motion_plan.start_pose;
-      a_goal_position = a_motion_plan.goal_position;
-      a_goal_thresh = a_motion_plan.goal_thresh;
-      a_g_poses = a_motion_plan.g_poses;
-      a_mp_type = a_motion_plan.mp_type;
-      a_mp_list = a_motion_plan.mps;            % MotionPrimitive()
-      a_mp_durations = a_motion_plan.mp_durations;
+      % Breakout inputs
+      scen_img = a_scen_props.image;
+      px2cm = a_scen_props.px2cm;
+      scen_lims = fliplr(size(scen_img)*px2cm);
+      rad_stop = a_scen_props.radStop;
+      start_pose = a_scen_props.startPose;
+      goal_position = a_scen_props.goalPosition;
 
-      % Compute world2grid mapping
-      for ii=1:length(a_gridS.size)
-        a_grids{ii} = a_gridS.cmin(ii) + a_dg*[0:(a_gridS.size(ii)-1)];
-      end
-      for ii=1:length(a_gridS.size)
-        map_w2g{ii} = griddedInterpolant(a_grids{ii},[1:a_gridS.size(ii)]);
-      end
-      map_world2grid = @(x) [map_w2g{1}(x(1,:)); map_w2g{2}(x(2,:))];
+      gait_lib = a_gait_library;
 
+      traj_timestamps = a_gait_trajectory.timestamps;           
+      traj_poses = a_gait_trajectory.poses;                     
+      traj_gait_names = a_gait_trajectory.gait_names;            
+      traj_gait_types = a_gait_trajectory.gait_types;           
+      traj_gait_durs = a_gait_trajectory.gait_durations;    
+      traj_gait_dirs = a_gait_trajectory.gait_directions; 
+
+      % Goal threshold radius/boundary
+      theta_rad_samp = linspace(0, 2*pi, 60);
+      goal_boundary = [ cos(theta_rad_samp) ; sin(theta_rad_samp) ]*rad_stop + goal_position;
+
+      % Optimal trajectory segments end positions
+      marker_clrs = zeros(length(traj_gait_types), 3);
+      for ii = 1:length(traj_gait_types)
+        if ( traj_gait_types(ii) == gaitdef.GaitType.ROTATE )
+          marker_clrs(ii, :) = [1, 0, 0];   % rotation = red
+        elseif ( traj_gait_types(ii) == gaitdef.GaitType.TRANSLATE )
+          marker_clrs(ii, :) = [0, 1, 0];   % translation = green
+        else
+          error('[MSoRoRTPlanner::plotTrajectory()] Invalid gait type encountered in trajectory plan: %s.', traj_gait_types(ii));
+        end
+      end
+
+      % Map gait names to gait library entries
+      traj_gait_lib_inds = zeros(1, length(traj_gait_names));
+      for ii = 1:length(traj_gait_names)
+        for jj = 1:length(gait_lib)
+          if ( strcmp(gait_lib(jj).gait_name, traj_gait_names{ii}) )
+            traj_gait_lib_inds(ii) = jj;
+            break;
+          end
+
+          if ( jj == length(gait_lib) )
+            error('[MSoRoRTPlanner::plotTrajectory()] Gait name planned in trajectory; not found in gait library: %s', traj_gait_names(ii));
+          end
+        end
+      end
+
+      % Plot trajectory segments for each MP
+      num_samples = 50;
+      gait_traj = zeros(2, num_samples+1, length(traj_gait_types)); % plus starting position
+      for ii = 1:length(traj_gait_types)          
+        gait_dur = traj_gait_durs(ii)*(gait_lib(traj_gait_lib_inds(ii)).len_gait*gait_lib(traj_gait_lib_inds(ii)).transition_time);
+        gait_twist = gait_lib(traj_gait_lib_inds(ii)).Twist;
+        
+        if ( traj_gait_dirs(ii) == gaitdef.GaitDir.NW )
+          gait_dir_twist = [-gait_twist(2), gait_twist(1), gait_twist(3)];   % [ cm/s, cm/s, rad/s ]
+        elseif ( traj_gait_dirs(ii) == gaitdef.GaitDir.SW )
+          gait_dir_twist = [-gait_twist(1), -gait_twist(2), gait_twist(3)];  % [ cm/s, cm/s, rad/s ]
+        elseif ( traj_gait_dirs(ii) == gaitdef.GaitDir.SE )
+          gait_dir_twist = [gait_twist(2), -gait_twist(1), gait_twist(3)];   % [ cm/s, cm/s, rad/s ]
+        else
+          gait_dir_twist = gait_twist;    % no change for NE, CW or CCW
+        end
+
+        g_0 = SE2(traj_poses(1:2, ii), traj_poses(3, ii));
+        gait_traj(:, 1, ii) = g_0.getTranslation();
+        for jj = 1:num_samples
+          g_twist = SE2.exp(gait_dir_twist', gait_dur/num_samples);
+          g_next = g_0*g_twist;
+          gait_traj(:, jj+1, ii) = g_next.getTranslation();
+          
+          g_0 = g_next;
+        end
+      end
+
+      % MSoRo overlay poses
+      traj_sample_inds = floor(linspace(1, size(traj_poses, 2), floor(size(traj_poses, 2)/4)));
+      msoro_sample_poses = traj_poses(:, traj_sample_inds);
+      msoro_overlays = zeros(2, size(a_msoro_outline, 2), length(traj_sample_inds));
+      for ii = 1:length(traj_sample_inds)
+        msoro_pose = SE2(msoro_sample_poses(1:2, ii), msoro_sample_poses(3, ii));
+        msoro_overlays(:, :, ii) = msoro_pose.leftact(a_msoro_outline);
+      end
+
+      % Convert coordinates to grid world units (to overlay on scenario
+      % image)
+      if ( ~isempty(scen_img) )
+        start_pose(1:2) = start_pose(1:2)/px2cm;
+        goal_position = goal_position/px2cm;
+        goal_boundary = goal_boundary/px2cm;
+        traj_poses(1:2, :) = traj_poses(1:2, :)/px2cm;
+        gait_traj(1:2, :, :) = gait_traj(1:2, :, :)/px2cm;
+
+        msoro_sample_poses(1:2, :) = msoro_sample_poses(1:2, :)/px2cm;
+        msoro_overlays = msoro_overlays/px2cm;
+      end
+
+      % Plot trajectory plan
       hold on;
         % Cost map
-        imagesc(a_cost_map);
+        if ( ~isempty(scen_img) )
+          imagesc(scen_img);
+        end
 
-        % Start and goal positions
-        start_grid_position = map_world2grid(a_start_pose.getTranslation());
-        plot(start_grid_position(1), start_grid_position(2), 'md', 'MarkerFaceColor', 'm', 'MarkerEdgeColor', 'm');
+        % Start pose and goal position
+        plot(start_pose(1), start_pose(2), 'md', 'MarkerFaceColor', 'm', 'MarkerEdgeColor', 'm');
+        quiver(start_pose(1), start_pose(2), cos(start_pose(3)), sin(start_pose(3)), ...
+                'Color', 'm', 'LineWidth', 1, 'MaxHeadSize', 1.0, ...
+                'AutoScale', 'on', 'AutoScaleFactor', 5);
+        quiver(start_pose(1), start_pose(2), -sin(start_pose(3)), cos(start_pose(3)), ...
+                'Color', 'm', 'LineWidth', 1, 'MaxHeadSize', 1.0, ...
+                'AutoScale', 'on', 'AutoScaleFactor', 5);
+        plot(goal_position(1), goal_position(2), 'kd', 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k');
 
-        goal_grid_position = map_world2grid(a_goal_position);
-        plot(goal_grid_position(1), goal_grid_position(2), 'kd', 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k');
-
-        theta_rad_samp = linspace(0, 2*pi, 60);     % Goal threshold radius/boundary
-        goal_boundary = [ cos(theta_rad_samp) ; sin(theta_rad_samp) ]*a_goal_thresh/a_dg + goal_grid_position;
+        % Goal threshold radius/boundary
         plot(goal_boundary(1, :), goal_boundary(2, :), 'k--', 'LineWidth', 1.5);
 
         % Optimal trajectory segments end positions
-        traj_grid_positions = zeros(2, length(a_g_poses)-1);
-        marker_clrs = zeros(length(a_g_poses)-1, 3);
-        for ii = 2:length(a_g_poses)
-          if ( a_mp_type(ii-1) == 'R' )
-            marker_clrs(ii-1, :) = [1, 0, 0];   % rotation = red
-          elseif ( a_mp_type(ii-1) == 'T' )
-            marker_clrs(ii-1, :) = [0, 1, 0];   % translation = green
-          else
-            error('[RTGreedyPlanner::plot_trajectory()] Invalid MP type in input motion plan: %s.', a_mp_type(ii));
-          end
-          traj_grid_positions(:, ii-1) = map_world2grid(a_g_poses(ii).getTranslation());
-        end
-        scatter(traj_grid_positions(1,:), traj_grid_positions(2, :), 40, marker_clrs, 'filled');
+        scatter(traj_poses(1, 2:end), traj_poses(2, 2:end), 40, marker_clrs, 'filled');
 
-        % Plot trajectory segments for each MP
-        num_samples = 50;
-        mp_grid_traj = zeros(2, num_samples+1); % plus starting position
-        for ii = 1:length(a_mp_type)
-          mp_twist = a_mp_list(ii).body_vel_twist;
-          mp_dt = a_mp_list(ii).dt;
-          mp_dur = a_mp_durations(ii);
-          g_0 = a_g_poses(ii);
-          mp_grid_traj(:, 1) = map_world2grid(g_0.getTranslation());
-          for jj = 1:num_samples
-            g_twist = SE2.exp(mp_twist', mp_dur*mp_dt/num_samples);
-            g_next = g_0*g_twist;
-            mp_grid_traj(:, jj+1) = map_world2grid(g_next.getTranslation());
-            g_0 = g_next;
-          end
-          if ( a_mp_type(ii) == 'R' )       % rotation MP (red)
-            plot(mp_grid_traj(1, :), mp_grid_traj(2, :), 'r-');
-          elseif ( a_mp_type(ii) == 'T' )   % translation MP (green)
-            plot(mp_grid_traj(1, :), mp_grid_traj(2, :), 'g-');
-          else
-            error('[RTGreedyPlanner::plot_trajectory()] Invalid MP type in input motion plan: %s.', a_mp_type(ii));
+        for ii = 1:length(traj_gait_types)          
+          % Plot trajectory segments for each MP
+          if ( traj_gait_types(ii) == gaitdef.GaitType.ROTATE )           % rotation MP (red)
+            plot(gait_traj(1, :, ii), gait_traj(2, :, ii), 'r-');
+          elseif ( traj_gait_types(ii) == gaitdef.GaitType.TRANSLATE )    % translation MP (green)
+            plot(gait_traj(1, :, ii), gait_traj(2, :, ii), 'g-');
           end
         end
-  
+ 
+        for ii = 1:length(traj_sample_inds)
+          % Plot MSoRo overlay
+          scatter(msoro_overlays(1, :, ii), msoro_overlays(2, :, ii), 5, 'm', 'Filled');
+          quiver(msoro_sample_poses(1, ii), msoro_sample_poses(2, ii), cos(msoro_sample_poses(3, ii)), sin(msoro_sample_poses(3, ii)), ...
+                  'Color', 'm', 'LineWidth', 1, 'MaxHeadSize', 1.0, ...
+                  'AutoScale', 'on', 'AutoScaleFactor', 5);
+          quiver(msoro_sample_poses(1, ii), msoro_sample_poses(2, ii), -sin(msoro_sample_poses(3, ii)), cos(msoro_sample_poses(3, ii)), ...
+                  'Color', 'm', 'LineWidth', 1, 'MaxHeadSize', 1.0, ...
+                  'AutoScale', 'on', 'AutoScaleFactor', 5);
+        end
       hold off;
       axis equal;
-      xlabel('X (grid units)'); ylabel('Y (grid units)');
-      title(sprintf('Grid unit = %.4f cm', a_dg));  % TODO: units should be set per user
+      xlabel('X (cm)'); ylabel('Y (cm)');
       drawnow;
+    end
+
+    % Extract MSoRo outline from robot image
+    %
+    % Input(s):
+    %   a_img_file:              robot image file
+    %   a_px2cm:                 image scaling factor
+    %   a_num_samps:             number of robot outline points
+    %
+    % Output(s):
+    %   result                    [x ; y] sequence of coordinates
+    % 
+    function [ result ] = img2msoroOutline( a_img_file, a_px2cm, a_num_samps )
+      img = imread(a_img_file);
+      bw_img = imbinarize(img);
+      bw_outline_img = bwperim(~bw_img);
+
+      % get outline pixel coordinates
+      [x,y] = find(bw_outline_img);
+      x = x/(length(bw_outline_img(1,:))/a_px2cm);
+      y = y/(length(bw_outline_img(1,:))/a_px2cm);
+      % re-center about outline centroid
+      x = x - mean(x);        
+      y = y - mean(y);
+
+      result = [x' ; y'];
+      result = result(:, floor(linspace(1, size(result, 2), a_num_samps)));
     end
 
   end % methods (static)

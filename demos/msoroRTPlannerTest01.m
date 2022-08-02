@@ -16,14 +16,15 @@ world_construct_method = 'actual';      % 'ideal' or 'actual' (ideal planned wor
 
 % Grid world properties
 gridS.dg = 1.565430166666667;     % pixels-to-cm (cm/px)
-gridS.cmin = [0, 0];
-gridS.size = [336, 336];
+gridS.cmin = [0, 0];              % physical world coordinates cooresponding to grid world bottom-left location
+gridS.size = [336, 336];          % grid world dimensions [x, y]
 
 % Planning parameters
 obstacle_threshold = 10;      % cost value at which a location is identified as obstacle
 
 % Cost map construction
-rad_falloff = 20;       % rate of radial decay for obstacle costs (grid units)
+rad_falloff = 23;             % radial decay constant for obstacle costs (grid units)
+                              % tune this between ~20-25 to adjust % trajectory results
 
 
 % [1] == Script setup
@@ -106,13 +107,6 @@ msoroRTPlanner = planning.MSoRoRTPlanner(params);
 % Set planning scenario (world)
 cf = msoroRTPlanner.setScenario( world_img, rad_falloff );
 
-%   Plot grid march world (cost map)
-figure(1);
-  imagesc(cf);
-%   colormap('gray');
-  ylim([0 200])
-  axis xy;
-
 % Set MSoRo gaits for planning
 gait_library = load('data/gait_library_2_corrected.mat').gait_library_2;
 rot_gait = gait_library(2);     % rotational gait
@@ -137,6 +131,19 @@ tic;
 toc
 
 % Visualize result
-% planning.MSoRoRTPlanner.plotTrajectory( trajectory_plan );
+%   Extract MSoRo outline
+msoro_img_file = '~/ivaMatlibs/control/+pathGen/starfish.pgm';
+img_scaling = 56;   % [TODO] figure out scaling here
+num_outline_pnts = 500;
+msoro_outline = msoroRTPlanner.img2msoroOutline(msoro_img_file, img_scaling, num_outline_pnts);
 
-    
+%   Plot trajectory /w MSoRo outline overlaid
+fig_hdl = figure;
+scen_props.image = cf;
+scen_props.px2cm = gridS.dg;
+scen_props.radStop = 50*scen_props.px2cm;
+scen_props.startPose = start_pose;
+scen_props.goalPosition = goal_position;
+planning.MSoRoRTPlanner.plotTrajectory(trajectory_plan, scen_props, gait_library, fig_hdl, msoro_outline);
+
+
