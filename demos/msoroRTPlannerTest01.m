@@ -100,14 +100,15 @@ end
 
 
 % [3] == Configure trajectory planner
+%  [3a] == Instantiate and configure MSoRoRTPlanner
 params.gridS = gridS;
 params.obstacle_threshold = obstacle_threshold;
 msoroRTPlanner = planning.MSoRoRTPlanner(params);
 
-% Set planning scenario (world)
+%  [3b] == Set planning scenario (world)
 cf = msoroRTPlanner.setScenario( world_img, rad_falloff );
 
-% Set MSoRo gaits for planning
+%  [3c] == Set MSoRo gaits for planning
 gait_library = load('data/gait_library_2_corrected.mat').gait_library_2;
 rot_gait = gait_library(2);     % rotational gait
 trans_gait = gait_library(5);   % translational gait
@@ -132,7 +133,7 @@ toc
 
 % Visualize result
 %   Extract MSoRo outline
-msoro_img_file = '~/ivaMatlibs/control/+pathGen/starfish.pgm';
+msoro_img_file = 'data/starfish1.pgm';
 img_scaling = 56;   % [TODO] figure out scaling here
 num_outline_pnts = 500;
 msoro_outline = msoroRTPlanner.img2msoroOutline(msoro_img_file, img_scaling, num_outline_pnts);

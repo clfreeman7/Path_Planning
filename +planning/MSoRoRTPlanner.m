@@ -483,9 +483,9 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
         for ii = 1:length(traj_gait_types)          
           % Plot trajectory segments for each MP
           if ( traj_gait_types(ii) == gaitdef.GaitType.ROTATE )           % rotation MP (red)
-            plot(gait_traj(1, :, ii), gait_traj(2, :, ii), 'r-');
+            rot_traj_plt_hdl = plot(gait_traj(1, :, ii), gait_traj(2, :, ii), 'r-');
           elseif ( traj_gait_types(ii) == gaitdef.GaitType.TRANSLATE )    % translation MP (green)
-            plot(gait_traj(1, :, ii), gait_traj(2, :, ii), 'g-');
+            trans_traj_plt_hdl = plot(gait_traj(1, :, ii), gait_traj(2, :, ii), 'g-');
           end
         end
  
@@ -502,6 +502,7 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
       hold off;
       axis equal;
       xlabel('X (cm)'); ylabel('Y (cm)');
+      legend([rot_traj_plt_hdl, trans_traj_plt_hdl], {'Rotate', 'Translate'}, 'Location', 'NorthEast');
       drawnow;
     end
 
