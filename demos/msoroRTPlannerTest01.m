@@ -10,6 +10,9 @@
 % [0] == Script usage
 ENABLE_VISUALIZATION = false;%true;%false;      %  Enable real-time visualization of planner exploration through grid world
 
+GAIT_LIBRARY_MAT = 'data/gait_library_2_corrected.mat';
+MSORO_PGM = 'data/starfish1.pgm';
+
 % World selection
 world = 4;                              % scenario selection: 1 through 4
 world_construct_method = 'actual';      % 'ideal' or 'actual' (ideal planned world vs. actual captured binary world)
@@ -109,7 +112,7 @@ msoroRTPlanner = planning.MSoRoRTPlanner(params);
 cf = msoroRTPlanner.setScenario( world_img, rad_falloff );
 
 %  [3c] == Set MSoRo gaits for planning
-gait_library = load('data/gait_library_2_corrected.mat').gait_library_2;
+gait_library = load(GAIT_LIBRARY_MAT).gait_library_2;
 rot_gait = gait_library(2);     % rotational gait
 trans_gait = gait_library(5);   % translational gait
 
@@ -133,7 +136,7 @@ toc
 
 % Visualize result
 %   Extract MSoRo outline
-msoro_img_file = 'data/starfish1.pgm';
+msoro_img_file = MSORO_PGM;
 img_scaling = 56;   % [TODO] figure out scaling here
 num_outline_pnts = 500;
 msoro_outline = msoroRTPlanner.img2msoroOutline(msoro_img_file, img_scaling, num_outline_pnts);
