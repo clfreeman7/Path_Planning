@@ -11,12 +11,6 @@
 %  Dependencies:
 %     ivaMatlibs/control/+pathGen (RTGreedyPlanner and MotionPrimitive classes)
 %
-%  TODO:
-%   (X) helper method -> cost map synthesis from binary scenario image
-%   (X) set goal thresh/radius
-%   (3) MSoRo layer + demo script
-%   (4) visualization with MSoRo overlay
-%
 %  ====================== MSoRoRTPlanner ========================
 classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
 
