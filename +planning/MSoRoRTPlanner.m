@@ -10,6 +10,9 @@
 %
 %  Dependencies:
 %     ivaMatlibs/control/+pathGen (RTGreedyPlanner and MotionPrimitive classes)
+%                                 ivaMatlibs/control repository: 
+%                                     Web page: https://github.gatech.edu/ivaMatlibs/control/tree/gm_Mwork
+%                                     Git URL: git@github.gatech.edu:ivaMatlibs/control.git (branch: gm_Mwork) 
 %
 %  ====================== MSoRoRTPlanner ========================
 classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
@@ -17,10 +20,6 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
   properties (Access = protected)
     rotation_gait;            % gaitdef.Gait instance modeling rotationally-dominant MSoRo gait
     translation_gait;         % gaitdef.Gait instance modeling translationally-dominant MSoRo gait
-
-    % Visualization/debug aids
-%     vis_config;     % (struct) visualization configuration
-%     vis_hdls;       % (struct) visualization figure and plot handles
 
     % Internal state
     gaits_set;
@@ -459,20 +458,25 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
         end
 
         % Start pose and goal position
-        plot(start_pose(1), start_pose(2), 'md', 'MarkerFaceColor', 'm', 'MarkerEdgeColor', 'm');
-        quiver(start_pose(1), start_pose(2), cos(start_pose(3)), sin(start_pose(3)), ...
-                'Color', 'm', 'LineWidth', 1, 'MaxHeadSize', 1.0, ...
-                'AutoScale', 'on', 'AutoScaleFactor', 5);
-        quiver(start_pose(1), start_pose(2), -sin(start_pose(3)), cos(start_pose(3)), ...
-                'Color', 'm', 'LineWidth', 1, 'MaxHeadSize', 1.0, ...
-                'AutoScale', 'on', 'AutoScaleFactor', 5);
-        plot(goal_position(1), goal_position(2), 'kd', 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k');
+        start_mrkr_hdl = plot(start_pose(1), start_pose(2), 'md', 'MarkerFaceColor', 'm', 'MarkerEdgeColor', 'm', 'MarkerSize', 9);
+        goal_mrkr_hdl = plot(goal_position(1), goal_position(2), 'kd', 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k', 'MarkerSize', 9);
 
         % Goal threshold radius/boundary
         plot(goal_boundary(1, :), goal_boundary(2, :), 'k--', 'LineWidth', 1.5);
 
+        for ii = 1:length(traj_sample_inds)
+          % Plot MSoRo overlay
+          plot(msoro_overlays(1, :, ii), msoro_overlays(2, :, ii), 'y-', 'LineWidth', 2.0);
+          bdy_frm_xaxis_hdl = quiver(msoro_sample_poses(1, ii), msoro_sample_poses(2, ii), cos(msoro_sample_poses(3, ii)), sin(msoro_sample_poses(3, ii)), ...
+                  'Color', [1,1,0]*0.8, 'LineWidth', 3.5, 'MaxHeadSize', 0.7, ...
+                  'AutoScale', 'on', 'AutoScaleFactor', 5);
+          quiver(msoro_sample_poses(1, ii), msoro_sample_poses(2, ii), -sin(msoro_sample_poses(3, ii)), cos(msoro_sample_poses(3, ii)), ...
+                  'Color', [1,1,0]*0.5, 'LineWidth', 2, 'MaxHeadSize', 0.7, ...
+                  'AutoScale', 'on', 'AutoScaleFactor', 5);
+        end
+        
         % Optimal trajectory segments end positions
-        scatter(traj_poses(1, 2:end), traj_poses(2, 2:end), 40, marker_clrs, 'filled');
+        scatter(traj_poses(1, 2:end), traj_poses(2, 2:end), 40, marker_clrs, 'Filled');
 
         for ii = 1:length(traj_gait_types)          
           % Plot trajectory segments for each MP
@@ -483,20 +487,21 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
           end
         end
  
-        for ii = 1:length(traj_sample_inds)
-          % Plot MSoRo overlay
-          scatter(msoro_overlays(1, :, ii), msoro_overlays(2, :, ii), 5, 'm', 'Filled');
-          quiver(msoro_sample_poses(1, ii), msoro_sample_poses(2, ii), cos(msoro_sample_poses(3, ii)), sin(msoro_sample_poses(3, ii)), ...
-                  'Color', 'm', 'LineWidth', 1, 'MaxHeadSize', 1.0, ...
-                  'AutoScale', 'on', 'AutoScaleFactor', 5);
-          quiver(msoro_sample_poses(1, ii), msoro_sample_poses(2, ii), -sin(msoro_sample_poses(3, ii)), cos(msoro_sample_poses(3, ii)), ...
-                  'Color', 'm', 'LineWidth', 1, 'MaxHeadSize', 1.0, ...
-                  'AutoScale', 'on', 'AutoScaleFactor', 5);
-        end
       hold off;
       axis equal;
       xlabel('X (cm)'); ylabel('Y (cm)');
-      legend([rot_traj_plt_hdl, trans_traj_plt_hdl], {'Rotate', 'Translate'}, 'Location', 'NorthEast');
+      disp_xlim_cm = scen_lims(1) - mod(scen_lims(1), 100);
+      disp_ylim_cm = scen_lims(2) - mod(scen_lims(2), 100);
+      disp_xlim_grid = disp_xlim_cm/px2cm;
+      disp_ylim_grid = disp_ylim_cm/px2cm;
+      disp_xticks_cm = 0:100:disp_xlim_cm; disp_yticks_cm = 0:100:disp_ylim_cm; 
+      disp_xticks_grid = disp_xticks_cm/px2cm; disp_yticks_grid = disp_yticks_cm/px2cm; 
+      xlim([0, disp_xlim_grid]); ylim([0, disp_ylim_grid]); 
+      xticks(disp_xticks_grid); yticks(disp_yticks_grid);
+      xticklabels(disp_xticks_cm); yticks(disp_yticks_cm);
+      legend([start_mrkr_hdl, goal_mrkr_hdl, rot_traj_plt_hdl, trans_traj_plt_hdl, bdy_frm_xaxis_hdl], ...
+              {'Start', 'Goal', 'Rotate', 'Translate', 'Body Frame $x$-axis'}, ...
+              'Location', 'NorthEast', 'Interpreter', 'latex');
       drawnow;
     end
 
@@ -508,20 +513,26 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
     %   a_num_samps:             number of robot outline points
     %
     % Output(s):
-    %   result                    [x ; y] sequence of coordinates
+    %   result                   [x ; y], sequence of coordinates
     % 
     function [ result ] = img2msoroOutline( a_img_file, a_px2cm, a_num_samps )
       img = imread(a_img_file);
-      bw_img = imbinarize(img);
+      bw_img = imbinarize(flipud(img));
       bw_outline_img = bwperim(~bw_img);
 
       % get outline pixel coordinates
-      [x,y] = find(bw_outline_img);
-      x = x/(length(bw_outline_img(1,:))/a_px2cm);
-      y = y/(length(bw_outline_img(1,:))/a_px2cm);
-      % re-center about outline centroid
-      x = x - mean(x);        
-      y = y - mean(y);
+      [y, x] = find(bw_outline_img);
+      [min_dist, min_dist_ind] = min(sqrt(x.^2 + y.^2));
+      min_x = x(min_dist_ind); min_y = y(min_dist_ind);   % NW-most corner of perimeter
+
+      outline_coords = bwtraceboundary(bw_outline_img, [min_y, min_x], 'E');
+
+      % re-center about outline's centroid
+      x = outline_coords(:, 2) - mean(outline_coords(:, 2));        
+      y = outline_coords(:, 1) - mean(outline_coords(:, 1));
+
+      x = x*a_px2cm;
+      y = y*a_px2cm;
 
       result = [x' ; y'];
       result = result(:, floor(linspace(1, size(result, 2), a_num_samps)));

@@ -8,8 +8,6 @@
 %
 
 % [0] == Script usage
-ENABLE_VISUALIZATION = false;%true;%false;      %  Enable real-time visualization of planner exploration through grid world
-
 GAIT_LIBRARY_MAT = 'data/gait_library_2_corrected.mat';
 MSORO_PGM = 'data/starfish1.pgm';
 
@@ -22,12 +20,13 @@ gridS.dg = 1.565430166666667;     % pixels-to-cm (cm/px)
 gridS.cmin = [0, 0];              % physical world coordinates cooresponding to grid world bottom-left location
 gridS.size = [336, 336];          % grid world dimensions [x, y]
 
-% Planning parameters
-obstacle_threshold = 10;      % cost value at which a location is identified as obstacle
-
 % Cost map construction
 rad_falloff = 23;             % radial decay constant for obstacle costs (grid units)
                               % tune this between ~20-25 to adjust % trajectory results
+
+% Planning parameters
+obstacle_threshold = 10;      % cost value at which a location is identified as obstacle
+stop_radius = 50*gridS.dg;    % goal radius within which planning completes
 
 
 % [1] == Script setup
@@ -52,7 +51,7 @@ switch world
       world_img(1:124,80:88) = 1;
       world_img(76:189,160:168) = 1;
       world_img(1:112,240:248) = 1;
-      world_img = imresize(double(world_img), 1/img_scaling);
+      world_img = imresize(double(world_img), 1/msoro_img_scaling);
     end
 
     start_pose = [36*gridS.dg ; 36*gridS.dg ; 0] ;
@@ -65,7 +64,7 @@ switch world
       world_img = zeros(189, 336);
       world_img(68:144,76:112) = 1;
       world_img(32:120,180:210) = 1;
-      world_img = imresize(double(world_img), 1/img_scaling);
+      world_img = imresize(double(world_img), 1/msoro_img_scaling);
     end
 
     start_pose = [36*gridS.dg ; 30*gridS.dg ; 0] ;
@@ -81,7 +80,7 @@ switch world
       world_img(152:172,92:160) = 1;
       world_img(132:152,124:160) = 1;
       world_img(72:132,204:224) = 1;
-      world_img = imresize(double(world_img), 1/img_scaling);
+      world_img = imresize(double(world_img), 1/msoro_img_scaling);
     end
 
     start_pose = [36*gridS.dg ; 36*gridS.dg ; 0] ;
@@ -94,7 +93,7 @@ switch world
       world_img = zeros(189, 336);
       world_img(24:100,76:100) = 1;
       world_img(136:160,164:212) = 1;
-      world_img = imresize(double(world_img), 1/img_scaling);
+      world_img = imresize(double(world_img), 1/msoro_img_scaling);
     end
 
     start_pose = [36*gridS.dg ; 36*gridS.dg ; 0] ;
@@ -106,6 +105,7 @@ end
 %  [3a] == Instantiate and configure MSoRoRTPlanner
 params.gridS = gridS;
 params.obstacle_threshold = obstacle_threshold;
+params.radStop = stop_radius;
 msoroRTPlanner = planning.MSoRoRTPlanner(params);
 
 %  [3b] == Set planning scenario (world)
@@ -119,16 +119,6 @@ trans_gait = gait_library(5);   % translational gait
 msoroRTPlanner.setGaits( rot_gait, trans_gait );
 
 
-% Configure planner visualization (debug aid)
-if ( ENABLE_VISUALIZATION )
-  vis_config.mode = 1;  % 1 = true (enable real-time visualization of planner exploration)
-  fig_hdl = figure;
-
-  fprintf('[msoroRTPlannerTest01] Configuring planner visualization (debug aid).\n');
-  msoroRTPlanner.configureVisualization( vis_config, fig_hdl );
-end
-
-
 % [4] == Plan discrete-time controlled trajectory
 tic;
   trajectory_plan = msoroRTPlanner.planTrajectory(SE2(start_pose(1:2), start_pose(3)), goal_position);
@@ -137,9 +127,9 @@ toc
 % Visualize result
 %   Extract MSoRo outline
 msoro_img_file = MSORO_PGM;
-img_scaling = 56;   % [TODO] figure out scaling here
+msoro_img_scaling = 35/525.3047;   % pixel-to-cm (i.e. cm/px) scaling for MSoRo image
 num_outline_pnts = 500;
-msoro_outline = msoroRTPlanner.img2msoroOutline(msoro_img_file, img_scaling, num_outline_pnts);
+msoro_outline = planning.MSoRoRTPlanner.img2msoroOutline(msoro_img_file, msoro_img_scaling, num_outline_pnts);  % MSoRo outline coordinates (cm)
 
 %   Plot trajectory /w MSoRo outline overlaid
 fig_hdl = figure;
