@@ -450,7 +450,7 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
       drawnow;
     end
 
-    % Extract MSoRo outline from robot image
+    % Extract robot outline from image
     %
     % Input(s):
     %   a_img_file:              robot image file
