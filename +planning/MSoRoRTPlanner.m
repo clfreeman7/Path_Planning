@@ -31,7 +31,7 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
 
     % Constructor
     function this = MSoRoRTPlanner( params )
-      assert( isfield(params, 'gridS'), '[RTGreedyPlanner::RTGreedyPlanner() Missing gridS parameter!]');
+      assert( isfield(params, 'gridS'), '[MSoRoRTPlanner::RTGreedyPlanner()] Missing gridS parameter!');
 
       % == Super class constructor
       this = this@pathGen.RTGreedyPlanner( params );
@@ -43,10 +43,6 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
       % == Internal state
       this.gaits_set = false;
       this.scenario_set = false;
-
-      % == Initialize visualization state
-      this.vis_config.mode = 0;
-      this.vis_hdls = [];
     end
 
     % Set rotationally-dominant and translationally-dominant gaits for trajectory planning
@@ -181,57 +177,6 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
 
       % Transcribe MP-based controlled trajectory outcome as a MSoRo gait-based controlled trajectory
       gait_trajectory_plan = this.mp2GaitTrajectory( mp_trajectory_plan );
-    end
-
-    % Enable/disable and configure visualization (debug aid) [TODO: NOT USED OR IMPLEMENTED CORRECTLY FOR THIS CLASS]
-    %
-    % Input(s):
-    %   a_vis_config:           visualization config.
-    %     a_vis_config.mode     visualization mode (0 = none, 1 = animate)
-    %   a_fig_hdl:              (optional) figure handle
-    % 
-    function configureVisualization( this, a_vis_config, a_fig_hdl )
-      if ( nargin < 3 )
-        this.vis_hdls.fig_hdl = figure;
-      else
-        this.vis_hdls.fig_hdl = a_fig_hdl;
-      end
-
-      this.vis_config.mode = a_vis_config.mode;
-
-      % Animate search space exploration
-      if ( this.vis_config.mode == 1 )
-        figure(this.vis_hdls.fig_hdl);
-        hold on;
-          % Cost map
-          if ( ~isempty(this.costMap) )  % logic in case method called prior to cost map assignment
-            this.vis_hdls.costmap_img_hdl = imagesc(this.costMap);
-            this.vis_hdls.costmap_visualized = true;
-          else
-            this.vis_hdls.costmap_img_hdl = imagesc(zeros(1, 1));
-            this.vis_hdls.costmap_visualized = false;
-          end
-
-          % Explored trajectory segment end positions
-          this.vis_hdls.cand_traj_plt_hdl = plot(0, 0, 'ro');
-          this.vis_data.cand_traj_pnts = [];
-
-          % Identified optimal trajectory segment end positions
-          this.vis_hdls.opt_traj_plt_hdl = plot(0, 0, 'go', 'MarkerFaceColor', 'g', 'MarkerEdgeColor', 'g');
-          this.vis_data.opt_traj_pnts = [];
-
-          % Start and goal positions
-          this.vis_hdls.start_pos_hdl = plot(0, 0, 'gd', 'MarkerFaceColor', 'g', 'MarkerEdgeColor', 'g');
-          this.vis_hdls.start_visualized = false;
-          this.vis_hdls.goal_pos_hdl = plot(0, 0, 'kd', 'MarkerFaceColor', 'k', 'MarkerEdgeColor', 'k');
-          this.vis_hdls.goal_rad_hdl = plot(0, 0, 'k-');
-          this.vis_hdls.goal_visualized = false;
-        hold off;
-        axis equal;
-        xlabel('X (grid units)'); ylabel('Y (grid units)');
-        this.vis_hdls.title_hdl = title(sprintf('Grid unit = %.4f cm', this.dg));  % TODO: units should be set per user
-        drawnow;
-      end
     end
 
   end %  methods (public)
