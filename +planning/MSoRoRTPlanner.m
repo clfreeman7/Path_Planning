@@ -184,7 +184,7 @@ classdef MSoRoRTPlanner < pathGen.RTGreedyPlanner
       gait_trajectory_plan = this.mp2GaitTrajectory( mp_trajectory_plan );
     end
 
-    % Enable/disable and configure visualization (debug aid)
+    % Enable/disable and configure visualization (debug aid) [TODO: NOT USED OR IMPLEMENTED CORRECTLY FOR THIS CLASS]
     %
     % Input(s):
     %   a_vis_config:           visualization config.
