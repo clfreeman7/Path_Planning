@@ -51,7 +51,7 @@ switch world
       world_img(1:124,80:88) = 1;
       world_img(76:189,160:168) = 1;
       world_img(1:112,240:248) = 1;
-      world_img = imresize(double(world_img), 1/msoro_img_scaling);
+      world_img = imresize(double(world_img), 1920/336);
     end
 
     start_pose = [36*gridS.dg ; 36*gridS.dg ; 0] ;
@@ -64,7 +64,7 @@ switch world
       world_img = zeros(189, 336);
       world_img(68:144,76:112) = 1;
       world_img(32:120,180:210) = 1;
-      world_img = imresize(double(world_img), 1/msoro_img_scaling);
+      world_img = imresize(double(world_img), 1920/336);
     end
 
     start_pose = [36*gridS.dg ; 30*gridS.dg ; 0] ;
@@ -80,7 +80,7 @@ switch world
       world_img(152:172,92:160) = 1;
       world_img(132:152,124:160) = 1;
       world_img(72:132,204:224) = 1;
-      world_img = imresize(double(world_img), 1/msoro_img_scaling);
+      world_img = imresize(double(world_img), 1920/336);
     end
 
     start_pose = [36*gridS.dg ; 36*gridS.dg ; 0] ;
@@ -93,7 +93,7 @@ switch world
       world_img = zeros(189, 336);
       world_img(24:100,76:100) = 1;
       world_img(136:160,164:212) = 1;
-      world_img = imresize(double(world_img), 1/msoro_img_scaling);
+      world_img = imresize(double(world_img), 1920/336);
     end
 
     start_pose = [36*gridS.dg ; 36*gridS.dg ; 0] ;
