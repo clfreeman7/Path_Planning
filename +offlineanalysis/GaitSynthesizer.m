@@ -87,14 +87,14 @@ classdef GaitSynthesizer < handle
            this.set_property(params, 'robot_name', 'undefined');
            this.set_property(params, 'substrate', 'undefined');
            this.set_property(params, 'n_unique_states', 16);
-           this.set_property(params, 'alpha_motion', 2*[1 1 1]');
+           this.set_property(params, 'alpha_motion', 4*[1 1 1]');
            this.set_property(params, 'alpha_var', 0.5*[1 1 1]');
-           this.set_property(params, 'alpha_len', 1);
+           this.set_property(params, 'alpha_len', .8);
            this.set_property(params, 'n_variations', 50);
            this.set_property(params, 'MAX_ITER', 50);
            this.set_property(params, 'goal', 1);
            this.set_property(params, 'MAX_TRANSLATION', 1);
-           this.set_property(params, 'MAX_ROTATION', deg2rad(5));
+           this.set_property(params, 'MAX_ROTATION', deg2rad(1));
            
 %            if this.goal == 3
 %                this.set_property(params, 'can_vary_alpha', [1 1 0 1 1 1 1])
@@ -189,7 +189,7 @@ classdef GaitSynthesizer < handle
                   hist{n_iterations + 1} = cycle;
                   if  length(cycle) == 1     % singleton solution
                     isSingleCycle = false;
-                    newA = -ones(1, cycle_len);
+                    newA = -ones(1, n_primitives);
                     newA(cycle) = 1;    
                     A = [A; newA];               % add cutting plane
                     b = [b; cycle_len-1];      
@@ -234,7 +234,7 @@ classdef GaitSynthesizer < handle
                             isComplete = true;
                         else
                             isSingleCycle = false;
-                            newA = -ones(1, cycle_len);
+                            newA = -ones(1, n_primitives);
                             newA(cycle) = 1;
                             A = [A; newA];
                             b = [b; cycle_len-1];

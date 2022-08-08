@@ -97,6 +97,9 @@ motion_primitive_data = cat(3, delta_x_data, delta_y_data, delta_theta_data);
 params_3.robot_name = 'MTA3';
 params_3.substrate= 'carpet';
 params_3.n_unique_states = 8;
+params_3.alpha_var = [0 0 0]';
+params_3.MAX_ROTATION = deg2rad(1);
+
 
 % [3] == Instantiate GaitSynthesizer() object to generate gaits from motion
 % primitive data.
@@ -106,3 +109,92 @@ gaits = gait_synthesis.solutions
 save data/MTA3_motion_primitives_carpet.mat motion_primitive_data
 
 
+% Find mean, variance, and standard deviation of data.
+avg_motions = squeeze(mean(motion_primitive_data, 1))';
+avg_motions(3,:) = rad2deg(avg_motions(3,:));
+var_motions = squeeze(var(motion_primitive_data, 0, 1))';
+stand_devs = var_motions.^(.5);
+stand_devs(3,:) = rad2deg(stand_devs(3,:));
+
+
+figure
+t = tiledlayout(3, 1);
+t.TileSpacing = "compact";
+t.Padding = 'compact';
+
+for i = 1:3
+nexttile;
+x = 1:size(avg_motions,2);
+xticks(1:length(motion_primitive_data))
+
+xlim([0.5, length(motion_primitive_data)+0.5])
+switch i 
+    case 1
+        ylabel('X-axis translation (cm)')
+    case 2 
+        ylabel('Y-axis translation (cm)')
+    case 3 
+        ylabel('Rotation (degrees)')
+end
+
+grid on 
+hold on
+plus_sd = avg_motions(i,:)+stand_devs(i,:);
+minus_sd = avg_motions(i,:)-stand_devs(i,:);
+% plot(x,plus_sd,'r')
+% plot(x,minus_sd,'r')
+p=fill([x fliplr(x)],[plus_sd fliplr(minus_sd)],'b','FaceAlpha',0.2, 'DisplayName',"\pm 1\sigma predicted");
+p.EdgeColor = 'b';
+stp = stem(x,avg_motions(i,:),'b', 'LineWidth',2,'MarkerFaceColor','b', 'MarkerSize',10,'DisplayName',"average predicted motion");
+
+end
+
+
+title(t,'Predicted vs. Actual Motion for each Motion Primitive in an Euler Tour on Carpet', 'FontSize', 24)
+t.XLabel.String = 'Motion primitive index';
+t.XLabel.FontSize = 24;
+%lg = legend([stp p sta pa],'FontSize',24);
+lg.Orientation = 'horizontal';
+lg.NumColumns = 2;
+lg.Layout.Tile = 'north';
+
+
+for i = 1:8
+    avg_motions = squeeze(mean(motion_primitive_data(1:i+2,:,:), 1))';
+avg_motions(3,:) = rad2deg(avg_motions(3,:));
+var_motions = squeeze(var(motion_primitive_data(1:i+2,:,:), 0, 1))';
+stand_devs = var_motions.^(.5);
+stand_devs(3,:) = rad2deg(stand_devs(3,:));
+avg_tot(:,i) = mean(avg_motions, 2);
+avg_std(:,i) = mean(stand_devs, 2);
+
+
+end
+figure
+tiledlayout(3,1)
+hold on
+for i = 1:3
+    nexttile
+    yyaxis left
+plot(3:10, avg_std(i,:))
+ylabel('Average Standard Deviation')
+yyaxis right
+plot(3:10, avg_tot(i,:))
+ylabel('Average Motion')
+switch i
+    case 1
+        title('X-axis translation (cm)')
+    case 2
+        title('Y-axis translation (cm)')
+    case 3
+        title('Rotation (deg)')
+end
+end
+nexttile
+    yyaxis left
+plot(3:10, mean(avg_std))
+ylabel('Average Standard Deviation')
+yyaxis right
+plot(3:10, mean(avg_tot))
+ylabel('Average Motion')
+title('Total motion')

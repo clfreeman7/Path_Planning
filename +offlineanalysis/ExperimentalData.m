@@ -74,9 +74,9 @@ classdef ExperimentalData < handle
             this.set_property(params, 'R_1', eye(3));
             
             % Extract marker positions from raw data.
-            this.marker_x_pos = raw_data(:, 1:3:22);
-            this.marker_y_pos = raw_data(:, 2:3:23);
-            this.marker_z_pos = raw_data(:, 3:3:24);
+            this.marker_x_pos = raw_data(:, 1:3:1+3*this.n_markers);
+            this.marker_y_pos = raw_data(:, 2:3:2+3*this.n_markers);
+            this.marker_z_pos = raw_data(:, 3:3:3+3*this.n_markers);
             
             % Reoraganize markers if the marker order is not default.
             this.marker_x_pos = this.marker_x_pos(:, this.marker_order);

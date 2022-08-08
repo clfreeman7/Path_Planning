@@ -77,7 +77,21 @@ classdef GaitTest < offlineanalysis.ExperimentalData
           this.states_to_primitives;
           
           % Find the local rotation matrices for each motion primitive. 
+           if size(raw_data, 2) > 3*this.n_markers + 2*9 + 2*3 % if timestamps are included in the raw data
+                n_keyframes = this.n_cycles*this.len_gait+2;
+            this.keyframes = zeros(n_keyframes, 1);
+            this.keyframes(1) = this.frame_1 - 1;
+
+                start_time = this.timestamps(this.keyframes(1));
+                end_time = start_time + (n_keyframes - 1)*this.transition_time;
+                keytimes = start_time: this.transition_time: end_time;
+                for i = 2:n_keyframes
+                    [~, idx] = min(abs(this.timestamps - keytimes(i)));
+                    this.keyframes(i) = idx;
+                end
+            else
           this.extract_keyframes;
+            end
           this.calculate_local_motions;
         end
         
@@ -132,7 +146,6 @@ classdef GaitTest < offlineanalysis.ExperimentalData
             if (frames_per_trans - floor(frames_per_trans)) < 0.05
                 % If # frames per transition is close to an integer: 
                 frames_per_trans = floor(frames_per_trans);    % make integer
-                unordered_poses(1:2, :) = p(initialFrame - 1:frames_per_trans:end);
             else 
                 n_keyframes = this.n_cycles*this.len_gait+2;
                 this.keyframes = zeros(n_keyframes, 1);
@@ -211,7 +224,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
             c1 = linspace(1,this.n_cycles,length(this.keyframes));
             c2 = [0.6350 0.0780 0.1840];
 
-            scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled')
+            scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled');
              scatter(pose_check(1, :), pose_check(2, :),sz, c2)
              quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0)
             %legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
