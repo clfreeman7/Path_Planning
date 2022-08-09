@@ -82,6 +82,7 @@ tic
     end
     
         thisFrame = read(videoObject,k);
+%         thisFrame = imcrop(thisFrame,[250,0,1920,1080]);
 %         if k == start_frame
 %             thisFrame = imcrop(thisFrame,[90,120,640,320]);
 %         else
@@ -89,10 +90,10 @@ tic
 %         end
 %         newim = createMaskfixedblue3(thisFrame);
 %         newim = createMaskCarpetBlue(thisFrame);
-%           newim = createMaskhdblue(thisFrame);
+          newim = createMaskhdblue(thisFrame);
 %         newim = createMasktemp(thisFrame);
 %         newim = createMaskpink2(thisFrame);
-        newim = createMaskpink4(thisFrame);
+%         newim = createMaskpink4(thisFrame);
 %         newim = createMaskHarishPink(thisFrame);
 
         if k == start_frame
