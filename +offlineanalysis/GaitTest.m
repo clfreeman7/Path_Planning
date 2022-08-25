@@ -63,6 +63,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
           if nargin < 3
               params = [];
           end
+
           % Use super class constructor for basic data analysis
           this@offlineanalysis.ExperimentalData( raw_data, params ); 
           this.set_property(params, 'n_unique_states', 16);
@@ -176,7 +177,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
                 % Orientation of initial pose w.r.t. global frame.
                 R_Global = this.rotm_global(:, :, this.keyframes(k+1));
                 delta_X_local = R_Global' * [delta_X_global; 0];
-                unordered_deltas(1:2, k) = delta_X_local(1:2);
+                unordered_deltas(1:2, k) = delta_X_local(1:2); 
             end
             this.delta_x = reshape(unordered_deltas(1,:), this.len_gait, this.n_cycles)';
             this.delta_y = reshape(unordered_deltas(2,:), this.len_gait, this.n_cycles)';

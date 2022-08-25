@@ -61,7 +61,8 @@ classdef ExperimentalData < handle
             if ( nargin < 2 )
                 params = [];
             end
-            
+            if ( nargin > 1)
+
             % Set default/ input values for experimental setup.
             this.set_property(params, 'robot_name', 'undefined');
             this.set_property(params, 'substrate', 'undefined');
@@ -95,6 +96,9 @@ classdef ExperimentalData < handle
             
             % Placeholders
             this.process_data(raw_data);
+            else
+                 raw_data = [];
+            end        
         end
         
     

@@ -46,14 +46,15 @@ classdef Gait < handle
                            % 3 - predicted gait
     
       % Change in robot pose information w.r.t. local frame of tail state
-      % for each motion primitive
+      % for each motion primitive where m (number of motion primitives) = 
+      % n x n_cycles
       
-      delta_poses;         % [3 x n] vector denoting average change in 
+      delta_poses;         % [3 x m] vector denoting average change in 
                            % [x y theta]' for theta in radians
                            
       var_delta_poses;     % variance 
       
-      twists;              % [3 x n] body twists in SE(2)
+      twists;              % [3 x m] body twists in SE(2)
       
       % Change in robot pose information w.r.t. local frame of tail state
       % for each Gait. 
@@ -88,7 +89,7 @@ classdef Gait < handle
 %           if class(gait_data_object) == 'offlineanalysis.GaitPredict'
 %             this.category = 2;    
 %           end
-                      % Find average change in robot pose for each motion primitive.
+             % Find average change in robot pose for each motion primitive.
             this.delta_poses(1,:) = mean(gait_data_object.delta_x);
             this.delta_poses(2,:) = mean(gait_data_object.delta_y);
             this.delta_poses(3,:) = mean(gait_data_object.delta_theta);
