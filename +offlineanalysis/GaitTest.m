@@ -190,7 +190,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
         function plot(this)
                         
             % Normalize w.r.t. the origin. 
-            this.poses(1:2,:) = this.poses(1:2,:)  - this.poses(1:2 ,1);
+            this.poses(1:2,:) = this.poses(1:2,:)  - this.poses(1:2,1);
             
             % Extract the global poses for every keyframe.
             key_poses = this.poses(:, this.keyframes);
@@ -214,6 +214,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
                 end
             end
             Poses = key_poses(:,1:this.len_gait:end);
+            Poses(3,:) = Poses(3,:)-Poses(3,1);
             w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
             hold on
             plot(this.poses(1,:), this.poses(2,:))

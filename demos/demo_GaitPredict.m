@@ -18,8 +18,8 @@ addpath('../');
 % Load motion primitive (x y theta) data.
 load 'data/experiment_2_motion_primitives_corrected.mat'
 % Define a gait.
-gait_sequence = [9,16,1]; 
-gait_name = "Gait E";
+gait_sequence = [16,7,5,11,14]; 
+gait_name = "Gait B";
 
 % Find the symmetric permutations.
 [allPerms, nPerms] = listpermutations(gait_sequence, true, false)
