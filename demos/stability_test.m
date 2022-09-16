@@ -54,6 +54,27 @@ gait_names{14} = 'B_60_S_F_Lf.mat';    % Gait B Follow (Left) Trial 2 [light she
 gait_names{15} = 'B_60_S_NF_L.mat';    % Gait B Left (Sheath on) Trial 1 [light sheath - following - left (flipped)]
 gait_names{16} = 'B_60_S_NF_Lf.mat';   % Gait B Left (Sheath on) Trial 2 [light sheath - following - left (flipped)]
 
+% From 20220901 Experiments:
+gait_names{17} = 'B_60_S_NF_R.mat';    % Gait B Right (sheath on)  [sheath - not following - right] (not consistent / semi-following)
+
+gait_names{18} = 'B_60_NS_F_R.mat';    % Gait B Right Follow (sheath off) Trial 1  [no sheath - following - right]
+gait_names{19} = 'B_60_NS_F_R_2.mat';  % Gait B Right Follow (sheath off) Trial 2 [no sheath - following - right]
+gait_names{20} = 'B_60_NS_F_L.mat';    % Gait B Left Follow (sheath off) Trial 1 [no sheath - following - left]
+gait_names{21} = 'B_60_NS_F_L_2.mat';  % Gait B Left Follow (sheath off) Trial 2 [no sheath - not following - left]
+
+gait_names{22} = 'B_60_NS_NF_R.mat';   % Gait B Right (sheath off) Trial 1 [no sheath -  not following - right] (not consistent / semi-following)
+gait_names{23} = 'B_60_NS_NF_R_2.mat'; % Gait B Right (sheath off) Trial 2 [no sheath -  not following - right] (not consistent / semi-following)
+gait_names{24} = 'B_60_NS_NF_L.mat';   % Gait B Left (sheath off) Trial 1 [no sheath -  not following - left] (not consistent / semi-following)
+gait_names{25} = 'B_60_NS_NF_L_2.mat'; % Gait B Left (sheath off) Trial 2 [no sheath -  not following - left] (not consistent / semi-following)
+
+gait_names{26} = 'B_60_S_F_R.mat';    % Gait B Right Follow(sheath on)  [sheath - following - right] 
+
+gait_names{27} = 'E_60_NS_NF_R.mat';   % Gait E Right (sheath off) Trial 1 [no sheath -  not following - right] (not consistent / semi-following)
+gait_names{28} = 'E_60_NS_NF_R_2.mat'; % Gait E Right (sheath off) Trial 2 [no sheath -  not following - right] (not consistent / semi-following)
+gait_names{29} = 'E_60_NS_NF_L_2.mat'; % Gait E Left (sheath off) Trial 1 [no sheath -  not following - left] (not consistent / semi-following)
+gait_names{30} = 'E_60_NS_NF_L_3.mat';   % Gait E Left (sheath off) Trial 2 [no sheath -  not following - left] (not consistent / semi-following)
+
+
 % Movement E_60_NS_NF_Lf
 
 n_gaits = length(gait_names);
@@ -65,12 +86,16 @@ frame_start_list(1:4) = [382, 234, 141, 109];
 frame_start_list(5) = 76;
 frame_start_list(6:11) = [210, 168, 131, 131, 55, 983];
 frame_start_list(12:16) = [132, 184, 278, 324, 196];
+frame_start_list(17:25) = [63, 45, 39, 49, 137, 36, 63, 39, 519];
+frame_start_list(26:30) = [88, 51, 64, 50, 57];
+
 
 % Find marker order by investigating first frame.
 marker_order_list = repmat([1 4 3 2],n_gaits, 1);
-marker_order_list([1,4,5,6,7,11,13,15],:) = repmat([1 3 4 2],8,1);
-marker_order_list([8,9,10],:) = repmat([2 4 3 1],3,1);
+marker_order_list([1,4,5,6,7,11,13,15,17,18,19,20,24,27,28,29,30],:) = repmat([1 3 4 2],17,1);
+marker_order_list([8,9,10,23,25],:) = repmat([2 4 3 1],5,1);
 marker_order_list([12,14,16],:) = repmat([4 2 1 3],3,1);
+marker_order_list([24,26],:) = repmat([2,3,4,1],2,1);
 
 show_markers = true;     % plots first frame of each video
 
@@ -529,11 +554,39 @@ ylabel('$\omega$ (deg/s)')
 
 xlabel('Global robot orientation $\theta_G$ (deg)')
 
+figure(10)
+for i = [13,14,15,16,17,26]
+all_gaits(i).plot;
+end
+lgd = legend('Continuous robot position', 'Actual keyframe positions', ...
+                  'Keyframe positions reconstructed from motion primitives','robot orientation');
+lgd.Orientation = 'horizontal';
+lgd.Location = 'northoutside';
+
+a = colorbar('southoutside');
+a.Label.String = 'Number of gaits executed';
+%E_60_NS_NF_L
+title('Gait B sheath')
+
+figure(11)
+for i = 18:25
+all_gaits(i).plot;
+end
+lgd = legend('Continuous robot position', 'Actual keyframe positions', ...
+                  'Keyframe positions reconstructed from motion primitives','robot orientation');
+lgd.Orientation = 'horizontal';
+lgd.Location = 'northoutside';
+
+a = colorbar('southoutside');
+a.Label.String = 'Number of gaits executed';
+%E_60_NS_NF_L
+title('Gait B no sheath')
+
 
 if show_markers
     figure
-    tiledlayout(4,4)
-    for i = 1:n_gaits
+    tiledlayout(1,2)
+    for i = [15,16]
     
     pic_name = gait_names{i};
     pic_name(end-3:end) = [];
