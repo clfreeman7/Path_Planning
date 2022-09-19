@@ -68,7 +68,7 @@ a = colorbar;
 a.Label.String = 'Number of Gaits Executed';
 a.Layout.Tile = 'south';
 
-gait_library_predict
+save  data/gait_library_predict_S gait_library_predict
 % for ii = 1:length(gait_library_predict)
 %   gait_library_predict(ii).gait_name = char(65 + ii - 1);
 % end

@@ -190,11 +190,11 @@ classdef Gait < handle
             plot(pose(1,:), pose(2,:))
             xlabel('x (cm)')
             ylabel('y (cm)')
-            if all(this.gait_name=='undefined')
-                title("Average Gait [" + num2str(this.robo_states) + "]")
-            else
-                title("Average Gait " + this.gait_name + ": [" +num2str(this.robo_states) + "]")
-            end
+%             if all(this.gait_name=='undefined')
+%                 title("Average Gait [" + num2str(this.robo_states) + "]")
+%             else
+%                 title("Average Gait " + this.gait_name + ": [" +num2str(this.robo_states) + "]")
+%             end
             grid on
             hold on
             sz = 30;

@@ -54,7 +54,7 @@ gait_names{14} = 'B_60_S_F_Lf.mat';    % Gait B Follow (Left) Trial 2 [light she
 gait_names{15} = 'B_60_S_NF_L.mat';    % Gait B Left (Sheath on) Trial 1 [light sheath - following - left (flipped)]
 gait_names{16} = 'B_60_S_NF_Lf.mat';   % Gait B Left (Sheath on) Trial 2 [light sheath - following - left (flipped)]
 
-% From 20220901 Experiments:
+% From 20220908 Experiments:
 gait_names{17} = 'B_60_S_NF_R.mat';    % Gait B Right (sheath on)  [sheath - not following - right] (not consistent / semi-following)
 
 gait_names{18} = 'B_60_NS_F_R.mat';    % Gait B Right Follow (sheath off) Trial 1  [no sheath - following - right]
@@ -92,12 +92,12 @@ frame_start_list(26:30) = [88, 51, 64, 50, 57];
 
 % Find marker order by investigating first frame.
 marker_order_list = repmat([1 4 3 2],n_gaits, 1);
-marker_order_list([1,4,5,6,7,11,13,15,17,18,19,20,24,27,28,29,30],:) = repmat([1 3 4 2],17,1);
-marker_order_list([8,9,10,23,25],:) = repmat([2 4 3 1],5,1);
+marker_order_list([1,4,5,6,7,11,13,15,17,18,19,20,22,23,24,27,28,29,30],:) = repmat([1 3 4 2],19,1);
+marker_order_list([8,9,10,21,25],:) = repmat([2 4 3 1],5,1);
 marker_order_list([12,14,16],:) = repmat([4 2 1 3],3,1);
-marker_order_list([24,26],:) = repmat([2,3,4,1],2,1);
+marker_order_list(26,:) = repmat([2,3,4,1],1,1);
 
-show_markers = true;     % plots first frame of each video
+show_markers = false;     % plots first frame of each video
 
 % Initialize the stability experiment struct. 
 stab_exp = struct('params', [], 'raw_data', []);
@@ -567,7 +567,7 @@ a = colorbar('southoutside');
 a.Label.String = 'Number of gaits executed';
 %E_60_NS_NF_L
 title('Gait B sheath')
-
+%%
 figure(11)
 for i = 18:25
 all_gaits(i).plot;
@@ -582,11 +582,58 @@ a.Label.String = 'Number of gaits executed';
 %E_60_NS_NF_L
 title('Gait B no sheath')
 
+% Instantiate objects for gait B sheath.
+figure
+t1 = tiledlayout(2,3);
+for i = [13,14,15,16,17,26]
+    all_gaits(i) = offlineanalysis.GaitTest(stab_exp(i).raw_data, ...
+                                                 [16,7,5,11,14], ...
+                                                 stab_exp(i).params);      
+    nexttile;
+    all_gaits(i).plot; 
+end
+title(t1,'Comparison of Gait B trials with light sheath')
+% Instantiate objects for gait B no sheath.
+figure
+t2 = tiledlayout(2,3);
+for i = [18,19,20,21,22,25]
+    all_gaits(i) = offlineanalysis.GaitTest(stab_exp(i).raw_data, ...
+                                                 [16,7,5,11,14], ...
+                                                 stab_exp(i).params);
+    nexttile;
+    all_gaits(i).plot;        
 
+end
+title(t2,'Comparison of Gait B trials with no sheath')
+%%
+figure(1)
+hold on;
+j = 1;
+for i =   [13,15,17,26]
+    gait_library_S(j) = gaitdef.Gait(all_gaits(i), stab_exp(i).params);
+         gait_library_S(j).gait_name = num2str(i);
+    gait_library_S(j).plot(60)
+    j = j+1;
+end
+title('Comparison of averaged Gait B trials with light sheath')
+%%
+figure
+hold on;
+j =1;
+for i = [18,19,20,21,22,25]
+    gait_library_NS(j) = gaitdef.Gait(all_gaits(i), stab_exp(i).params);
+    gait_library_NS(j).gait_name = num2str(i);
+   
+    gait_library_NS(j).plot(60)
+    j = j+1;
+end
+title('Comparison of averaged Gait B trials with no sheath')
+
+%%
 if show_markers
     figure
-    tiledlayout(1,2)
-    for i = [15,16]
+    tiledlayout(5,6)
+    for i = 1:n_gaits
     
     pic_name = gait_names{i};
     pic_name(end-3:end) = [];

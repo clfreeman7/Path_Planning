@@ -7,26 +7,24 @@
 %  PrimitivesTest()
 %
 %  The constructor accepts raw_data as an argument, which is the raw output
-%  from visual tracking, defined as an array all_pts structured as
-%  follows: 
-%  Columns             Respective Data
-%  1  to 3  (1x3)      Marker 1 [x,y,z]
-%  4  to 6  (1x3)      Marker 2 [x,y,z]
-%  7  to 9  (1x3)      Marker 3 [x,y,z]
-%  10 to 12 (1x3)      Marker 4 [x,y,z]
-%  13 to 15 (1x3)      Marker 5 [x,y,z]
-%  16 to 18 (1x3)      Marker 6 [x,y,z]
-%  19 to 21 (1x3)      Marker 7 [x,y,z]
-%  22 to 24 (1x3)      Marker 8 [x,y,z]
-%  25 to 33 (1x9)      Rotation matrix Intermediate frames 
-%                         [Reshaped from 3x3 to 1x9]
-%  34 to 36 (1x3)      Translation Matrix Intermediate frames 
-%                         [[x,y,z]Reshaped from 3x1 to 1x3] 
-%  37 to 45 (1x9)      Rotation matrix Global frame 
-%                         [Reshaped from 3x3 to 1x9]
-%  46 to 48 (1x3)      Translation Matrix Global frame 
-%                         [[x,y,z]Reshaped from 3x1 to 1x3]
-
+%  from visual tracking, defined as an array tracking_data structured as
+%  follows, whose size depends on the number of n markers: 
+%  Columns                       Respective Data
+%  1  to 3  (1x3)                Marker 1 [x,y,z]
+%  4  to 6  (1x3)                Marker 2 [x,y,z]
+%            . . .
+%  3*(n-1)+1 to 3*n (1x3)        Marker n [x,y,z]
+%
+%  3*n+1 to 3*n+9 (1x9)          Rotation matrix Intermediate frames 
+%                                  [Reshaped from 3x3 to 1x9]
+%  3*n+10 to 3*n+12 (1x3)        Translation Matrix Intermediate frames 
+%                                  [[x,y,z]Reshaped from 3x1 to 1x3] 
+%  3*n+13 to 3*n+21 (1x9)        Rotation matrix Global frame 
+%                                  [Reshaped from 3x3 to 1x9]
+%  3*n+22 to 3*n+24 (1x3)        Translation Matrix Global frame 
+%                                  [[x,y,z]Reshaped from 3x1 to 1x3]
+%  3*n+ + 2*9 + 2*3 + 1 (1x1)    Timestamps (s)
+%
 % ==================== PrimitivesTest =======================
 classdef PrimitivesTest < offlineanalysis.ExperimentalData 
     properties (Access = public)
@@ -130,7 +128,7 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
         
         % Extract keyframes.
         function extract_keyframes(this)
-                n_keyframes = this.n_unique_states*(this.n_unique_states-1)+2;
+            n_keyframes = this.n_unique_states*(this.n_unique_states-1)+2;
             this.keyframes = zeros(n_keyframes, 1);
             this.keyframes(1) = this.frame_1 - 1;
               % if timestamps are not included, assume constant framerate and approximate
@@ -183,11 +181,14 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             if nargin<2
                 is_labeled = false;
             end
+            % Normalize w.r.t. the origin. 
+            this.poses(1:2,:) = this.poses(1:2,:)  - this.poses(1:2,1);
+            
             % Extract the global poses for every keyframe.
-            key_poses = this.poses(:, this.keyframes) - this.poses(:,1);
+            key_poses = this.poses(:, this.keyframes);
+            
             % Reconstruct the keyframe positions from motion primitives.
-            pose_check(1:2, 1) = this.poses(1:2, this.keyframes(2)) - this.poses(1:2,1);
-            pose_check(3,1) = this.poses(3, this.keyframes(2));
+            pose_check(:, 1) = this.poses(:, this.keyframes(2));
             R =  eul2rotm([pose_check(3,1) 0 0]);
             pos = [pose_check(1:2, 1); 0];
             for i = 1:this.n_unique_states*(this.n_unique_states-1)
@@ -205,6 +206,9 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
 
 % Reconstruct the Euler tour trajectory using the SE2 class and motion
 % primitives. 
+            Poses = key_poses(:, 1:10:end);
+            Poses(3,:) = Poses(3,:)-Poses(3,1);
+            w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
 
             hold on
             plot(this.poses(1,:) - this.poses(1,1), this.poses(2,:)- this.poses(2,1))
@@ -218,11 +222,16 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             c2 = [0.6350 0.0780 0.1840];
             scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled')
             scatter(pose_check(1, :), pose_check(2, :),sz, c2)
+            quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0)
+
             if is_labeled
                 title('Verification of Motion Primitive Calculations')
                 legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
                    'Keyframe Positions Reconstructed from Motion Primitives')
             end
+                         daspect([1 1 1]);
+             grid on;
+
         end
     end  %methods
 
