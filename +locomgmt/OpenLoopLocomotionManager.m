@@ -197,16 +197,10 @@ classdef OpenLoopLocomotionManager < locomgmt.RobotLocomotionManager
     % Retrieve current robot pose from visual tracking
     % 
     % Input(s):
-    %   a_traj_index (index of this.trajectory_plan fields to retrieve)
+    %   TBD
     % 
     % Ouptut(s):
-    %   robo_cntrl (struct)
-    %     robo_cntrl.timestamp        (target timestamp)
-    %     robo_cntrl.pose             (target pose)
-    %     robo_cntrl.gait_name        (gait name to execute)
-    %     robo_cntrl.gait_type        (gait type: "TRANSLATE" or "ROTATE")
-    %     robo_cntrl.gait_duration    (gait duration, # of gait periods)
-    %     robo_cntrl.gait_direction   (gait direction: "NE", "NW", "SE", "SW", "CCW")
+    %   TBD
     % 
     function update_robo_pose( this )
       fprintf('[%.2f sec.] [OpenLoopLocomotionManager::update_robo_pose()] Retrieve updated robot pose.\n', ...
