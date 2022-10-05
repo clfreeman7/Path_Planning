@@ -54,7 +54,7 @@ gait_names{14} = 'B_60_S_F_Lf.mat';    % Gait B Follow (Left) Trial 2 [light she
 gait_names{15} = 'B_60_S_NF_L.mat';    % Gait B Left (Sheath on) Trial 1 [light sheath - following - left (flipped)]
 gait_names{16} = 'B_60_S_NF_Lf.mat';   % Gait B Left (Sheath on) Trial 2 [light sheath - following - left (flipped)]
 
-% From 20220901 Experiments:
+% From 20220908 Experiments:
 gait_names{17} = 'B_60_S_NF_R.mat';    % Gait B Right (sheath on)  [sheath - not following - right] (not consistent / semi-following)
 
 gait_names{18} = 'B_60_NS_F_R.mat';    % Gait B Right Follow (sheath off) Trial 1  [no sheath - following - right]
@@ -74,11 +74,31 @@ gait_names{28} = 'E_60_NS_NF_R_2.mat'; % Gait E Right (sheath off) Trial 2 [no s
 gait_names{29} = 'E_60_NS_NF_L_2.mat'; % Gait E Left (sheath off) Trial 1 [no sheath -  not following - left] (not consistent / semi-following)
 gait_names{30} = 'E_60_NS_NF_L_3.mat';   % Gait E Left (sheath off) Trial 2 [no sheath -  not following - left] (not consistent / semi-following)
 
-
-% Movement E_60_NS_NF_Lf
+if isrow(gait_names)
+    gait_names = gait_names';
+end
 
 n_gaits = length(gait_names);
 
+% Extract characteristics of each gait test.
+file_names = split(gait_names, '.');
+gait_characteristics = cell(n_gaits, 7);
+for i = 1:n_gaits
+    gait_characteristics(i, 1) = num2cell(i);
+    n_underscores = count(gait_names{i}, '_');
+    if n_underscores == 4
+        gait_characteristics(i, 2:6) = split(file_names(i,1), '_');
+        gait_characteristics(i, 7) = num2cell(1);
+    else
+        gait_characteristics(i, 2:7) = split(file_names(i,1), '_');
+    end
+end
+characteristics = ["ExperimentNumber", "GaitType", "NumberOfCycles", "TetherType", ...
+              "TetherProtocol", "TetherPlacement", "TrialNumber"];
+
+experiments = cell2table(gait_characteristics, "VariableNames", ...
+              characteristics);
+sorted_exps = sortrows(experiments, characteristics([2, 4, 5, 6, 7]))
 
 % Define experimental parameters after investigating videos. 
 %frame_start_list = [382, 234, 141, 109, 76, 129, 88, 74, 76, 55, 983];
@@ -92,12 +112,12 @@ frame_start_list(26:30) = [88, 51, 64, 50, 57];
 
 % Find marker order by investigating first frame.
 marker_order_list = repmat([1 4 3 2],n_gaits, 1);
-marker_order_list([1,4,5,6,7,11,13,15,17,18,19,20,24,27,28,29,30],:) = repmat([1 3 4 2],17,1);
-marker_order_list([8,9,10,23,25],:) = repmat([2 4 3 1],5,1);
+marker_order_list([1,4,5,6,7,11,13,15,17,18,19,20,22,23,24,27,28,29,30],:) = repmat([1 3 4 2],19,1);
+marker_order_list([8,9,10,21,25],:) = repmat([2 4 3 1],5,1);
 marker_order_list([12,14,16],:) = repmat([4 2 1 3],3,1);
-marker_order_list([24,26],:) = repmat([2,3,4,1],2,1);
+marker_order_list(26,:) = repmat([2,3,4,1],1,1);
 
-show_markers = true;     % plots first frame of each video
+show_markers = false;     % plots first frame of each video
 
 % Initialize the stability experiment struct. 
 stab_exp = struct('params', [], 'raw_data', []);
@@ -187,11 +207,11 @@ for i = 1:n_gaits
          head_idx{i}(1,j) = all_gaits(i).keyframes(len_gait*j+2);
 
          % Find change in poses w.r.t. global inertial frame for each motion primitive. 
-         delta_poses{i}(:,j) = all_gaits(i).poses(:, head_idx{i}(1,j)) - all_gaits(i).poses(:, tail_idx{i}(1,j));
-         delta_poses{i}(3,j) = delta_poses{i}(3,j) - delta_poses{i}(3,1);
-
+         delta_poses{i}(:,j) = all_gaits(i).raw_poses(:, head_idx{i}(1,j)) - all_gaits(i).raw_poses(:, tail_idx{i}(1,j));
+         %delta_poses{i}(3,j) = delta_poses{i}(3,j) - delta_poses{i}(3,1);
+         delta_poses{i}(1:2,j) = all_gaits(i).pixel_length*delta_poses{i}(1:2,j);
          % Find global orientation of robot at each motion primitive tail. 
-         global_theta{i}(:,j) = all_gaits(i).poses(3, tail_idx{i}(1,j));
+         global_theta{i}(:,j) = all_gaits(i).raw_poses(3, tail_idx{i}(1,j));
 
          % Convert from global frame to body frame.  
          rot_mat =  [cos(global_theta{i}(1,j)) -sin(global_theta{i}(1,j)); sin(global_theta{i}(1,j)) cos(global_theta{i}(1,j))];
@@ -202,7 +222,7 @@ for i = 1:n_gaits
         %twists{i}(1:2,j) = 1/(all_gaits(i).transition_time*len_gait)*delta_poses{i}(1:2,j);
         %twists{i}(3,j) = 1/(all_gaits(i).transition_time*len_gait)*delta_poses{i}(3,j);
          % Find instantaneous center of rotation.
-         %cent_rot{i}(:,j) = inv(eye(2) - rot_mat)*delta_poses{i}(:, 1:2);
+        % cent_rot{i}(:,j) = inv(eye(2) - rot_mat)*delta_poses{i}(:, 1:2);
 
          % Find instantaneous radius of curvature.
          %rad_curv{i}(1,j) = norm(cent_rot{i}(:,j));
@@ -220,7 +240,7 @@ all_gaits(1).plot;
 title('Heavy left with resetting')
 nexttile;
 all_gaits(5).plot;
-title('Heavy right with resetting')
+title('Sheath right with resetting')
 nexttile;
 all_gaits(6).plot;
 title('Left following')
@@ -255,18 +275,21 @@ a.Layout.Tile = 'east';
 title(t1, 'Comparison of two experiements of Gait B [16,7,5,11,14]','FontSize',24)
 
 % Plot Gait E with fixed tethers.
-figure(3)
+%figure(3)
 t3 = tiledlayout(3,1,'TileSpacing','compact');
+
 nexttile;
 all_gaits(8).plot;
 title('Tether pulling to the left')
 ylim([-3 0.3])
 xlim([0 10])
+
 nexttile;
 all_gaits(9).plot;
 title('Tether pulling to the right')
 ylim([-3 0.3])
 xlim([0 10])
+
 nexttile;
 all_gaits(10).plot;
 title('Tether pulling to the left (no sheath)')
@@ -291,103 +314,28 @@ title(t3, 'Comparison of gait E [9 16 1] with different tether orientations','Fo
 
 
 %% [4] == Plot the twist data for each experiment.
+figure(3)
 
+trial_labels = {'Right Follow','Right Follow', 'Left Follow', 'Left Follow', 'Right NF', 'Right NF', 'Left NF'};
+t_4 = plot_twists(twists, global_theta, [18,19,20,21,22,23,25], trial_labels,[0 1; 0 1; 0 0.1; 0 1; 0 1; 0 0.1]);
+title(t_4, 'Twist (body velocity) for experiments of Gait B with no sheath', 'FontSize',22)
+%%
 figure(4)
-t = tiledlayout(3,2);
-nexttile;
-plot(twists{3}(1,:))
-hold on
-plot(twists{8}(1,:))
-plot(twists{9}(1,:))
-plot(twists{10}(1,:))
-%plot(twists{11}(1,:))
-ylabel('$v_x$ (cm/s)')
 
-nexttile(3);
-plot(twists{3}(2,:))
-hold on
-plot(twists{8}(2,:))
-plot(twists{9}(2,:))
-plot(twists{10}(2,:))
-%plot(twists{11}(2,:))
-ylabel('$v_y$ (cm/s)')
-
-nexttile(5);
-plot(rad2deg(twists{3}(3,:)))
-hold on
-plot(rad2deg(twists{8}(3,:)))
-plot(rad2deg(twists{9}(3,:)))
-plot(rad2deg(twists{10}(3,:)))
-%plot(rad2deg(twists{11}(3,:)))
-ylabel('$\omega$ (deg/s)')
-
-lgd = legend('Heavy Left','Left', 'Right', 'Left (No Sheath)', 'Right (No Sheath)');
-lgd.Orientation = 'horizontal';
-lgd.Layout.Tile = 'north';
-xlabel('Number of Gait Cycles')
-title(t,'Twist (body velocity) for two experiments of Gait E [9,16,1]', 'FontSize',22)
-
-nexttile(2);
-scatter(rad2deg(global_theta{3}(1,:)),twists{3}(1,:))
-hold on
-scatter(rad2deg(global_theta{8}(1,:)),twists{8}(1,:))
-scatter(rad2deg(global_theta{9}(1,:)),twists{9}(1,:))
-scatter(rad2deg(global_theta{10}(1,:)),twists{10}(1,:))
-%scatter(rad2deg(global_theta{11}(1,:)),twists{11}(1,:))
-xlim([-180 180])
-ylabel('$v_x$ (cm/s)')
-
-nexttile(4);
-scatter(rad2deg(global_theta{3}(1,:)),twists{3}(2,:))
-hold on
-scatter(rad2deg(global_theta{8}(1,:)),twists{8}(2,:))
-scatter(rad2deg(global_theta{9}(1,:)),twists{9}(2,:))
-scatter(rad2deg(global_theta{10}(1,:)),twists{10}(2,:))
-%scatter(rad2deg(global_theta{11}(1,:)),twists{11}(2,:))
-xlim([-180 180])
-ylabel('$v_y$ (cm/s)')
-
-nexttile(6);
-scatter(rad2deg(global_theta{3}(1,:)),twists{3}(3,:))
-hold on
-scatter(rad2deg(global_theta{8}(1,:)),twists{8}(3,:))
-scatter(rad2deg(global_theta{9}(1,:)),twists{9}(3,:))
-scatter(rad2deg(global_theta{10}(1,:)),twists{10}(3,:))
-%scatter(rad2deg(global_theta{11}(1,:)),twists{11}(3,:))
-xlim([-180 180])
-ylabel('$\omega$ (deg/s)')
-
-
-xlabel('Global robot orientation $\theta_G$ (deg)')
+trial_labels = {'Heavy Left','Left', 'Right', 'Left (No Sheath)'};
+t_4 = plot_twists(twists, global_theta, [3,8,9,10], trial_labels,[]);
+title(t_4, 'Twist (body velocity) for two experiments of Gait E [9,16,1]', 'FontSize',22)
 
 figure(5)
-t = tiledlayout(3,2);
-nexttile;
-plot(twists{1}(1,:))
-hold on
-plot(twists{5}(1,:))
-ylim([-.3 .53])
-ylabel('$v_x$ (cm/s)')
-
-nexttile(3);
-plot(twists{1}(2,:))
-hold on
-plot(twists{5}(2,:))
-ylim([-.05 .67])
-ylabel('$v_y$ (cm/s)')
-
-nexttile(5);
-plot(rad2deg(twists{1}(3,:)))
-hold on
-plot(rad2deg(twists{5}(3,:)))
-ylim([-1.9 5.8])
-ylabel('$\omega$ (deg/s)')
-
-lgd = legend('Left resetting', 'Right resetting');
-lgd.Orientation = 'horizontal';
-lgd.Layout.Tile = 'north';
-xlabel('Number of Gait Cycles')
-title(t,'Twist (body velocity) for two experiments of Gait B [16,7,5,11,14] with heavy tether', 'FontSize',22)
+ylims = [-.3 .53;
+        -.05 .67;
+        -1.9 5.8;
+        -0.3 0.6;
+        -0.05 0.7;
+        -0.02 0.1];
+trial_labels = {'Left resetting', 'Right resetting'};
+t_5 = plot_twists(twists, global_theta, [1,5], trial_labels,ylims);
+title(t_5,'Twist (body velocity) for two experiments of Gait B [16,7,5,11,14] with different tethers', 'FontSize',22)
 
 nexttile(2);
 scatter(rad2deg(global_theta{1}(1,:)),twists{1}(1,:))
@@ -472,7 +420,7 @@ ylabel('$\omega$ (deg/s)')
 xlabel('Global robot orientation $\theta_G$ (deg)')
 
 % Plot both Gait B experiments. 
-figure(7)
+%figure(7)
 t1 = tiledlayout(1,2);
 nexttile;
 all_gaits(15).plot;
@@ -491,7 +439,7 @@ a.Layout.Tile = 'south';
 title(t1, 'Gait B [16,7,5,11,14] not following (left) with light sheath','FontSize',24)
 
 
-figure(8)
+%figure(8)
 all_gaits(10).plot;
 lgd = legend('Continuous robot position', 'Actual keyframe positions', ...
                   'Keyframe positions reconstructed from motion primitives','robot orientation');
@@ -504,7 +452,7 @@ a.Label.String = 'Number of gaits executed';
 title('Gait E [9 16 1] not following (left) with no sheath')
 
 
-figure(9)
+%figure(9)
 t = tiledlayout(3,2);
 nexttile;
 plot(twists{15}(1,:))
@@ -554,7 +502,7 @@ ylabel('$\omega$ (deg/s)')
 
 xlabel('Global robot orientation $\theta_G$ (deg)')
 
-figure(10)
+%figure(10)
 for i = [13,14,15,16,17,26]
 all_gaits(i).plot;
 end
@@ -567,9 +515,9 @@ a = colorbar('southoutside');
 a.Label.String = 'Number of gaits executed';
 %E_60_NS_NF_L
 title('Gait B sheath')
-
-figure(11)
-for i = 18:25
+%%
+%figure(11)
+for i = [18,19,20,21,22,23,25]
 all_gaits(i).plot;
 end
 lgd = legend('Continuous robot position', 'Actual keyframe positions', ...
@@ -582,11 +530,59 @@ a.Label.String = 'Number of gaits executed';
 %E_60_NS_NF_L
 title('Gait B no sheath')
 
+% Instantiate objects for gait B sheath.
+%figure
+t1 = tiledlayout(2,3);
+for i = [13,14,15,16,17,26]
+    all_gaits(i) = offlineanalysis.GaitTest(stab_exp(i).raw_data, ...
+                                                 [16,7,5,11,14], ...
+                                                 stab_exp(i).params);      
+    nexttile;
+    all_gaits(i).plot; 
+end
+title(t1,'Comparison of Gait B trials with light sheath')
+% Instantiate objects for gait B no sheath.
+%figure
+t2 = tiledlayout(2,3);
+for i = [18,19,20,21,22,25]
+    all_gaits(i) = offlineanalysis.GaitTest(stab_exp(i).raw_data, ...
+                                                 [16,7,5,11,14], ...
+                                                 stab_exp(i).params);
+    nexttile;
+    all_gaits(i).plot;        
 
+end
+title(t2,'Comparison of Gait B trials with no sheath')
+%%
+figure
+hold on;
+j = 1;
+for i = [13,14,15,16,17,26]
+    gait_library_S(j) = gaitdef.Gait(all_gaits(i), stab_exp(i).params);
+    gait_library_S(j).gait_name = num2str(i);
+    gait_library_S(j).plot(60)
+    j = j+1;
+end
+title('Comparison of averaged Gait B trials with light sheath')
+%%
+%figure
+hold on;
+j =1;
+for i = [18,19,20,21,22,25]
+    gait_library_NS(j) = gaitdef.Gait(all_gaits(i), stab_exp(i).params);
+    gait_library_NS(j).gait_name = num2str(i);
+   
+    gait_library_NS(j).plot(60)
+    j = j+1;
+end
+title('Comparison of averaged Gait B trials with no sheath')
+figure(7)
+
+%%
 if show_markers
     figure
-    tiledlayout(1,2)
-    for i = [15,16]
+    tiledlayout(5,6)
+    for i = 1:n_gaits
     
     pic_name = gait_names{i};
     pic_name(end-3:end) = [];
@@ -614,5 +610,47 @@ if show_markers
 end
 end
 
+function twists_plot = plot_twists(twists, global_theta, trial_nums, trial_labels, ylims)
 
+    twists_plot = tiledlayout(3,2);
+    ylabels = {'$v_x$ (cm/s)', '$v_y$ (cm/s)', '$\omega$ (deg/s)'};
+
+    % Plot twist components vs number of gait cycles.
+    for i = 1:3
+        nexttile(2*i - 1);
+        hold on;
+        for j = 1:length(trial_nums)        
+            plot(twists{trial_nums(j)}(i,:))
+        end
+        ylabel(ylabels{i})
+        if ~isempty(ylims)
+            ylim(ylims(i,:))
+        end
+    end
+    xlabel('Number of Gait Cycles')
+    
+    % Plot twist components vs global robot orientation.
+    for i = 1:3
+        nexttile(2*i);
+        hold on;
+        for j = 1:length(trial_nums)        
+            scatter(rad2deg(global_theta{trial_nums(j)}(1,:)),twists{trial_nums(j)}(i,:))
+        end
+        xlim([-180 180])
+        ylabel(ylabels{i})
+        if ~isempty(ylims)
+            ylim(ylims(3+i,:))
+        end
+    end
+    xlabel('Global robot orientation $\theta_G$ (deg)')
+
+    if length(trial_labels) > 1
+        lgd = legend(trial_labels);
+        lgd.Orientation = 'horizontal';
+        lgd.Layout.Tile = 'north';
+    else
+        plot_title = ['Twist (body velocity) for', trial_labels];
+        title(twists_plot,plot_title, 'FontSize',22) 
+    end
+end
 

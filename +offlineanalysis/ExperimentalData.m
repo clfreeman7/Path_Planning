@@ -52,7 +52,12 @@ classdef ExperimentalData < handle
       t_global;        % [3 x n] translation vectors for every frame n
       
       % Sequence of poses [x y theta]' in the global frame for every frame.
-      poses;           % [3 x n] matrix
+      raw_poses;       % [3 x n] matrix in pixels
+
+      % Sequence of poses [x y theta]' in the global frame for every frame
+      % normalized to start at [0 0 0]'.
+      poses;           % [3 x n] matrix in cm
+      
     end 
     
     methods
@@ -61,7 +66,6 @@ classdef ExperimentalData < handle
             if ( nargin < 2 )
                 params = [];
             end
-            if ( nargin > 1)
 
             % Set default/ input values for experimental setup.
             this.set_property(params, 'robot_name', 'undefined');
@@ -90,15 +94,13 @@ classdef ExperimentalData < handle
                 time_index = 3*this.n_markers + 2*9 + 2*3+1;
                 this.timestamps = raw_data(: , time_index) - raw_data(1 , time_index);
             else 
-                this.timestamps = [0: (length(raw_data)-1)] / this.framerate; 
+                this.timestamps = [0: (this.n_frames-1)] / this.framerate; 
             end
             this.timestamp_1 = this.timestamps(this.frame_1);
             
             % Placeholders
             this.process_data(raw_data);
-            else
-                 raw_data = [];
-            end        
+    
         end
         
     
@@ -115,34 +117,45 @@ classdef ExperimentalData < handle
         % Find the rotation matrix, translation vector, and pose for each 
         % frame w.r.t. the global coordinate system (GCS).
         function process_data(this, raw_data)
-            for i = 1:length(raw_data)
+            % Calculate raw global robot position in pixels.
+            pos = [mean(this.marker_x_pos, 2)'; 
+                   mean(this.marker_y_pos, 2)';
+                   mean(this.marker_z_pos, 2)']; 
+            rotated_pos = pos;
+            for i = 1:this.n_frames
                 % Rotation matrices and translation vectors have already
                 % been calculated and stored in raw data file. Extract:
                 rg_idx = 3*this.n_markers+9+3+1;
                 this.rotm_global(:, :, i) = reshape(raw_data(i, rg_idx:rg_idx+8), [3,3]);
                 % Multiply by initial rotation matrix:
-                this.rotm_global(:, :, i) = this.R_1' * this.rotm_global(:, :, i);
-                this.t_global(:, i) =  this.R_1' * raw_data(i, rg_idx+9:rg_idx+11)';
-                % Use these to calculate the pose of the robot center.
                 if i == 1
-                    pos_global(:, 1) =[mean(this.marker_x_pos(1, :)); 
-                                       mean(this.marker_y_pos(1,:));
-                                       mean(this.marker_z_pos(1,:))];
+                    this.rotm_global(:, :, i) = this.R_1';
                 else
-                    pos_global(:, i) = this.rotm_global(:, :, i)*pos_global(:, 1) + ...
-                                 this.t_global(:, i);
+                this.rotm_global(:, :, i) = this.R_1' * this.rotm_global(:, :, i);
                 end
+                this.t_global(:, i) =  this.R_1' * raw_data(i, rg_idx+9:rg_idx+11)';
                 % Use built-in MATLAB command to convert rotation matrix
                 % to Euler angles.
+                
                 eul_angles = rotm2eul(this.rotm_global(:, :, i));
-                this.poses(:, i) = [pos_global(1, i);      % x position in GCS
-                                    pos_global(2, i);      % y position in GCS
-                                    eul_angles(1)];      % heading / yaw
+                % Use these to calculate the pose of the robot center.
+                rotated_pos(:, i) = this.R_1'*(pos(:,i)-pos(:,1));
+
+                this.raw_poses(:,i) = [pos(1, i);           % x position in GCS
+                                       pos(2, i);           % y position in GCS
+                                       eul_angles(1)];      % heading / yaw 
+
+                this.poses(:, i) = [rotated_pos(1, i);      % x position in GCS
+                                    rotated_pos(2, i);      % y position in GCS
+                                    eul_angles(1)];         % heading / yaw
             end
             % Convert from pixels to cm. 
             this.poses(1:2, :) = this.poses(1:2, :) * this.pixel_length;
             this.t_global = this.t_global * this.pixel_length;
-            this.poses(:,1) = this.poses(:,2);
+            % Normalize w.r.t. first pose.
+            %this.raw_poses(3,1) = this.raw_poses(3,2);
+            %this.poses(3,1) = this.poses(3,2);
+            this.poses = this.poses - this.poses(:,1);
         end
     end
 end
