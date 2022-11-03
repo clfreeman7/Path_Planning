@@ -89,11 +89,11 @@ classdef GaitSynthesizer < handle
            this.set_property(params, 'n_unique_states', 16);
            this.set_property(params, 'alpha_motion', 4*[1 1 1]');
            this.set_property(params, 'alpha_var', 0.5*[1 1 1]');
-           this.set_property(params, 'alpha_len', .8);
-           this.set_property(params, 'n_variations', 50);
+           this.set_property(params, 'alpha_len', 1.5);
+           this.set_property(params, 'n_variations', 100);
            this.set_property(params, 'MAX_ITER', 50);
            this.set_property(params, 'goal', 1);
-           this.set_property(params, 'MAX_TRANSLATION', 1);
+           this.set_property(params, 'MAX_TRANSLATION', .1);
            this.set_property(params, 'MAX_ROTATION', deg2rad(1));
            
 %            if this.goal == 3

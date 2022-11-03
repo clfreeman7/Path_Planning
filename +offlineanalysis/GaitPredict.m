@@ -33,6 +33,11 @@ classdef GaitPredict
       
       delta_theta;     % change in rotation (CCW is positive)
       
+      var_x;
+
+      var_y;
+
+      var_theta;
     end 
     methods 
          % Constructor
@@ -47,12 +52,20 @@ classdef GaitPredict
           
           this.len_gait = length(gait_sequence);
           
-          this.delta_x = squeeze(motion_primitive_data(:,gait_sequence,1));
-          this.delta_y = squeeze(motion_primitive_data(:,gait_sequence,2));
-          this.delta_theta = squeeze(motion_primitive_data(:,gait_sequence,3));
+          % Analyze data to find average and variance in motion.
+          avg_motions = squeeze(mean(motion_primitive_data, 1));
+          var_motions = squeeze(var(motion_primitive_data, 0, 1));
 
           % Define the sequence of motion primitive labels.
           this.primitive_labels = this.states_to_primitives;
+
+          this.delta_x = avg_motions(this.primitive_labels,1);
+          this.delta_y = avg_motions(this.primitive_labels,2);
+          this.delta_theta = avg_motions(this.primitive_labels,3);
+
+          this.var_x = var_motions(this.primitive_labels,1);
+          this.var_y = var_motions(this.primitive_labels,2);
+          this.var_theta = var_motions(this.primitive_labels,3);
          end
 
         % Set parameter value for class-instance, based on user specified 
@@ -98,6 +111,49 @@ classdef GaitPredict
              end
         end
 
+        function pose = plot(this, n_cycles)
+            
+            R =  eye(3);
+            pos = [0; 0; 0];
+            k=0;
+            pose = zeros(3, n_cycles*this.len_gait+1);
+            for i = 1:n_cycles
+                for j = 1:this.len_gait
+                    k = k+1;
+                    delta_x_local = this.delta_x(j);
+                    delta_y_local = this.delta_y(j);
+                    R_local = eul2rotm([this.delta_theta(j) 0 0]);
+                    % Use body-frame transformation formula:
+                    pos = R*[delta_x_local; delta_y_local; 0] + pos;
+                    % Post-multiply for intrinsic rotations.
+                    R = R*R_local;
+                    % Store global position data for verification.
+                    pose(:, k+1) = pos;
+                    pose(3,k+1) = pose(3,k) + this.delta_theta(j);
+                end
+            end
+            Poses = pose(:, 1:this.len_gait:end);
+            w = ((max(pose(1,:))-min(pose(1,:))).^2+(max(pose(2,:))-min(pose(2,:))).^2).^.5/10;
+            hold on
+            plot(pose(1,:), pose(2,:))
+            xlabel('x (cm)')
+            ylabel('y (cm)')
+            title("Predicted Gait [" + num2str(this.robo_states) + "]")
+            hold on
+            sz = 30;
+            c1 = linspace(1,n_cycles,length(pose));
+            c2 = [0.6350 0.0780 0.1840];
+
+            scatter(pose(1,:), pose(2,:), sz, c1, 'filled');
+             %scatter(pose_check(1, :), pose_check(2, :),sz, c2)
+             scatter(Poses(1, :), Poses(2, :),sz, c2)
+             quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0)
+            %legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
+            %       'Keyframe Positions Reconstructed from Motion Primitives')
+             daspect([1 1 1]);
+             grid on;
+        end
+        
 
     end % methods
 end %classdef

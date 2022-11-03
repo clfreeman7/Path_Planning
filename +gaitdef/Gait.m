@@ -25,6 +25,10 @@ classdef Gait < handle
       transition_time;     % time constant for motion primitives in seconds
       
       substrate;           % surface that the robot moves on
+
+      tether;              % tether  
+
+      tether_protocol;
       
       n_unique_states;     % number of unique robot states
       
@@ -41,10 +45,13 @@ classdef Gait < handle
       len_gait;            % [n] length of the gait (number of robot states)
       
       category;            % category of data: scalar
-                           % 1 - tested gait with automatic tracking
-                           % 2 - tested gait with manual tracking
-                           % 3 - predicted gait
-    
+                           % GaitTest - tested gait with automatic tracking
+                           % OldGaitTest - tested gait with manual tracking
+                           % GaitPredict - predicted gait
+
+      n_experiments;       % number of GaitTest() objects being analyzed if 
+                           % category 1
+
       % Change in robot pose information w.r.t. local frame of tail state
       % for each motion primitive where m (number of motion primitives) = 
       % n x n_cycles
@@ -70,41 +77,52 @@ classdef Gait < handle
     methods 
         % Constructor
         function this = Gait( gait_data_object,  params)
-          if nargin < 2
-              params = [];
-          end
-          this.set_property(params, 'gait_name', 'undefined');  
-          this.set_property(params, 'robot_name', 'undefined');             
-          this.set_property(params, 'transition_time', .45);  % s    
-          this.set_property(params, 'substrate', 'mat');  % s         
-          this.set_property(params, 'n_unique_states', 16);
+            if nargin < 2
+                params = [];
+            end
+            this.set_property(params, 'gait_name', 'undefined');
+            this.set_property(params, 'robot_name', 'undefined');
+            this.set_property(params, 'transition_time', .45);  % s
+            this.set_property(params, 'substrate', 'mat');  % s
+            this.set_property(params, 'n_unique_states', 16);
 
-          this.robo_states = gait_data_object.robo_states;
-          this.primitive_labels = gait_data_object.primitive_labels;
-          this.len_gait = gait_data_object.len_gait;
-          
-%           if class(gait_data_object) == 'offlineanalysis.GaitTest'
-%             this.category = 1;    
-%           end
-%           if class(gait_data_object) == 'offlineanalysis.GaitPredict'
-%             this.category = 2;    
-%           end
-             % Find average change in robot pose for each motion primitive.
-            this.delta_poses(1,:) = mean(gait_data_object.delta_x);
-            this.delta_poses(2,:) = mean(gait_data_object.delta_y);
-            this.delta_poses(3,:) = mean(gait_data_object.delta_theta);
+            this.robo_states = gait_data_object(1).robo_states;
+            this.primitive_labels = gait_data_object(1).primitive_labels;
+            this.len_gait = gait_data_object(1).len_gait;
+
+            if isa(gait_data_object, 'offlineanalysis.GaitTest')
+                this.category = 'GaitTest';
+            end
+            if isa(gait_data_object, 'offlineanalysis.GaitPredict') 
+                this.category = 'GaitPredict';
+            end
+            % Find average change in robot pose for each motion primitive.
             
-            this.var_delta_poses(1,:) = var(gait_data_object.delta_x);
-            this.var_delta_poses(2,:) = var(gait_data_object.delta_y);
-            this.var_delta_poses(3,:) = var(gait_data_object.delta_theta);        
-          this.calculate_total_motion;
-          
-          % Convert change in robot pose to body twists. 
-          for i = 1:this.len_gait
-              this.twists(:, i) = this.delta_pose_2_twist(this.delta_poses(:, i), this.transition_time);
-          end
-          this.Twist = this.delta_pose_2_twist(this.Delta_Pose, this.transition_time*(this.len_gait));
-          
+            this.n_experiments = length(gait_data_object);
+            delta_x = [];
+            delta_y = [];
+            delta_theta = [];
+
+            for i = 1: this.n_experiments
+                delta_x = [delta_x; gait_data_object(i).delta_x];
+                delta_y = [delta_y; gait_data_object(i).delta_y];
+                delta_theta = [delta_theta; gait_data_object(i).delta_theta];
+            end
+            this.delta_poses(1,:) = mean(delta_x);
+            this.delta_poses(2,:) = mean(delta_y);
+            this.delta_poses(3,:) = mean(delta_theta);
+
+            this.var_delta_poses(1,:) = var(delta_x);
+            this.var_delta_poses(2,:) = var(delta_y);
+            this.var_delta_poses(3,:) = var(delta_theta);
+            this.calculate_total_motion;
+
+            % Convert change in robot pose to body twists.
+            for i = 1:this.len_gait
+                this.twists(:, i) = this.delta_pose_2_twist(this.delta_poses(:, i), this.transition_time);
+            end
+            this.Twist = this.delta_pose_2_twist(this.Delta_Pose, this.transition_time*(this.len_gait));
+
         end
     
         % Set parameter value for class-instance, based on user specified 
@@ -140,7 +158,7 @@ classdef Gait < handle
 
 
 
-        function plot(this, n_cycles)
+        function pose = plot(this, n_cycles)
             if nargin<2
                 n_cycles = 1;
             end 
@@ -162,7 +180,8 @@ classdef Gait < handle
                     % Post-multiply for intrinsic rotations.
                     R = R*R_local;
                     % Store global position data for verification.
-                    pose(:, k+1) = pos;
+                    pose(1:2, k+1) = pos(1:2);
+                    pose(3,k+1) = pose(3,k) + this.delta_poses(3,j);
                 end
             end
             
