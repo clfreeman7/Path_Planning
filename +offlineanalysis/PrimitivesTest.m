@@ -25,7 +25,6 @@
 %                                  [[x,y,z]Reshaped from 3x1 to 1x3]
 %  3*n+ + 2*9 + 2*3 + 1 (1x1)    Timestamps (s)
 %
-
 % ==================== PrimitivesTest =======================
 classdef PrimitivesTest < offlineanalysis.ExperimentalData 
     properties (Access = public)
@@ -66,8 +65,8 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
                       
             if size(raw_data, 2) > 3*this.n_markers + 2*9 + 2*3 % if timestamps are included in the raw data
                 n_keyframes = this.n_unique_states*(this.n_unique_states-1)+2;
-                this.keyframes = zeros(n_keyframes, 1);
-                this.keyframes(1) = this.frame_1 - 1;
+            this.keyframes = zeros(n_keyframes, 1);
+            this.keyframes(1) = this.frame_1 - 1;
 
                 start_time = this.timestamps(this.keyframes(1));
                 end_time = start_time + (n_keyframes - 1)*this.transition_time;
@@ -152,8 +151,7 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
         
         function calculate_local_motions(this)
             % Extract the global poses for every keyframe.
-            key_poses = this.raw_poses(:, this.keyframes);
-            key_poses(1:2,:) = key_poses(1:2,:)*this.pixel_length;
+            key_poses = this.poses(:, this.keyframes);
             
             % Define local changes in these poses w.r.t. to each tail pose. 
             unordered_deltas = zeros(3, this.n_unique_states*(this.n_unique_states-1));
@@ -183,8 +181,12 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             if nargin<2
                 is_labeled = false;
             end
+            % Normalize w.r.t. the origin. 
+            this.poses(1:2,:) = this.poses(1:2,:)  - this.poses(1:2,1);
+            
             % Extract the global poses for every keyframe.
             key_poses = this.poses(:, this.keyframes);
+            
             % Reconstruct the keyframe positions from motion primitives.
             pose_check(:, 1) = this.poses(:, this.keyframes(2));
             R =  eul2rotm([pose_check(3,1) 0 0]);
@@ -207,8 +209,9 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             Poses = key_poses(:, 1:10:end);
             Poses(3,:) = Poses(3,:)-Poses(3,1);
             w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
+
             hold on
-            plot(this.poses(1,:), this.poses(2,:))
+            plot(this.poses(1,:) - this.poses(1,1), this.poses(2,:)- this.poses(2,1))
             xlabel('x (cm)')
             ylabel('y (cm)')
             daspect([1 1 1])
@@ -220,13 +223,15 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled')
             scatter(pose_check(1, :), pose_check(2, :),sz, c2)
             quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0)
+
             if is_labeled
                 title('Verification of Motion Primitive Calculations')
                 legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
                    'Keyframe Positions Reconstructed from Motion Primitives')
             end
-            daspect([1 1 1]);
-            grid on;
+                         daspect([1 1 1]);
+             grid on;
+
         end
     end  %methods
 

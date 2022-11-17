@@ -199,3 +199,4 @@ function plot_all_deviations(mp_data)
         plot(x,avg_motions(i,:),'b')
         end
 end
+
