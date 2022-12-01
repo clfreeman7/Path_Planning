@@ -26,23 +26,15 @@ gait_B = gait_library_3(gait_names == 'B').robo_states;    % rotation gait
 % that rotate the actuation sequence by 90 degrees):
 
 % The translation gait has 4 symmetric permutations.
-[allPerms_G, n_G] = listpermutations(gait_G, 1, 0)
+[G_states, n_G] = listpermutations(gait_G, 1, 0)
 
-% The rotation gait has 4 symmetric permutations.
-[allPerms_B, n_B] = listpermutations(gait_B, 1, 0)
 
 % [4] == Give these new gaits names based on the direction. 
-unique_idx = 1;
-while ismember(gait_G(unique_idx), [1,16])  % if actuation sequence is [0000] or [1111] 
-    unique_idx = unique_idx+1;
-end
-if unique_idx> length(gait_G)
-    error('All symmetric permutations are identical.')
-end
-for i = 1:4
-    correct_order(i,:) = circshift(dec2bin(gait_G(unique_idx)-1,4), i-1);
-    current_order(i,:) = dec2bin(gait_G(i)-1,4);
-end
+Directions= {'NW'; 'SW'; 'SE'; 'NE'};
+Permutation_Number = [1:4]';
+% Label the permutations.
+G_perms = table(Permutation_Number, G_states, Directions)
+
 
 
 

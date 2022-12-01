@@ -1,16 +1,19 @@
-function [allPerms, nPerms] = listpermutations(gaitCycle, issymmetric, isCyclic)
+function [allPerms, nPerms] = listpermutations(gaitCycle, isSymmetric, isCyclic, nActuators)
 % LISTPERMUTATIONS  
 % listpermutations(gaitCycle) lists all m unique cyclic and symmetric
 % permutations of the robot states in the n-vector gaitCycle as rows in an
 % m x n matrix .
 %
 % For an assymmetric robot:
-% listpermutations(gaitCycle, issymmetric) lists all m uniquen cyclic and
+% listpermutations(gaitCycle, issymmetric) lists all m unique cyclic and
 % symmetric permutations of the robot states in the n-vector gaitCycle as
 % rows in an m x n matrix. Symmetric permutations will be excluded if
 % issymmetric = false.
 %
 % isCylic toggles whether cyclic permutations are calculated. 
+%
+% nActuators is an optional input that defines the number of robot 
+% actuators (assuming binary control). The default is 4.  
 %
 % [allPerms, nPerms] = listpermutations(gaitCycle) will also list the
 % total number nPerms of cyclic and symmetric permutations. 
@@ -23,38 +26,44 @@ function [allPerms, nPerms] = listpermutations(gaitCycle, issymmetric, isCyclic)
 % 1/27/22
 
 
+    if nargin < 4
+        nActuators = 4;    % default number of binary robot actuators
+    end
 
     if nargin < 2
-        issymmetric = true;
+        isSymmetric = true;
     end
    
     if ~isvector(gaitCycle)
         error('gaitCycle must be a vector of robot state labels.');
     end
    
-    allPerms(1, :) = gaitCycle;
+    allPerms(1, :) = gaitCycle;     % matrix to store all permutations
     lenCycle = length(gaitCycle);
     
-    % Find symmetric permutation states
-    if issymmetric
-        origStates= dec2bin(0:15, 4);    % actuation states as 4 bit strings
+    % Define the symmetric permutatations for all unique robot states.
+    if isSymmetric
+        nA = nActuators;
+        origStates= dec2bin(0:2^nA-1, nA);    % actuation states as nA-bit strings
         symStates = origStates;
         symLabels(1, :) = 1:16;
-        for i = 1:3
+        for i = 1:nA -1
             symStates = circshift(symStates, 1, 2);
+            % Store the state labels for all permutations.
             [~, symLabels(i+1, :)] = ismember(symStates, origStates, 'rows');
         end
     end
     
-    % Find symmetric permutation cycles 
+    % Find permutation cycles.
     for i = 1:lenCycle
         if isCyclic
-            % Find cyclic permutations
+            % Find cyclic permutation cycles.
            cyclicPerms = circshift(gaitCycle, i);
         else
             cyclicPerms = gaitCycle;
         end
-       if issymmetric
+       if isSymmetric
+           % Find symmetric permutation cycles.
            symPerms = symLabels(:, cyclicPerms);
            allPerms = [allPerms; symPerms];
        else
@@ -63,10 +72,7 @@ function [allPerms, nPerms] = listpermutations(gaitCycle, issymmetric, isCyclic)
            end
        end
     
-    % Remove any repeated permutations
-    allPerms = unique(allPerms, 'rows');
-    rowIdx = find(ismember(allPerms,gaitCycle,'rows'));
-    allPerms(rowIdx,:) = [];
-    allPerms = [gaitCycle; allPerms];
+    % Remove any repeated permutations.
+    allPerms = unique(allPerms, 'rows', 'stable');
     [nPerms, ~] = size(allPerms);
 end
