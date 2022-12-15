@@ -8,8 +8,8 @@
 %
 
 % [0] == Script usage
-% GAIT_LIBRARY_MAT = 'data/gait_library_3.mat';
-GAIT_LIBRARY_MAT = 'data/gait_library_demo.mat';  % fictitious gait library for demo purposes (contains fictitious gaits: B (rot), G (trans), I (trans), J (trans), K (trans)
+GAIT_LIBRARY_MAT = 'data/gait_library_4.mat';
+% GAIT_LIBRARY_MAT = 'data/gait_library_demo.mat';  % fictitious gait library for demo purposes (contains fictitious gaits: B (rot), G (trans), I (trans), J (trans), K (trans)
 MSORO_PGM = 'data/starfish1.pgm';
 
 % World selection
@@ -113,8 +113,8 @@ rtGaitPlanner = planning.RTGaitPlanner(params);
 cf = rtGaitPlanner.setScenario( world_img, rad_falloff );
 
 %  [3c] == Set MSoRo gaits for planning
-% gait_library = load(GAIT_LIBRARY_MAT).gait_library_3;
-gait_library = load(GAIT_LIBRARY_MAT).gait_library_demo;
+gait_library = load(GAIT_LIBRARY_MAT).gait_library_4;
+% gait_library = load(GAIT_LIBRARY_MAT).gait_library_demo;
 
 rot_gaits = gait_library(1);     % rotational gaits
 trans_gaits = gait_library(2:5);   % translational gaits
