@@ -71,7 +71,7 @@ classdef ExperimentalData < handle
             this.set_property(params, 'robot_name', 'undefined');
             this.set_property(params, 'substrate', 'undefined');
             this.set_property(params, 'framerate', 30);      % frames/sec
-            this.set_property(params, 'pixel_length', .2426);  % cm/pixel
+            this.set_property(params, 'pixel_length', 1/8.544);  % cm/pixel
             this.set_property(params, 'n_markers', 8);
             this.set_property(params, 'transition_time', .45); % sec   
             this.set_property(params, 'marker_order', 1:this.n_markers);
