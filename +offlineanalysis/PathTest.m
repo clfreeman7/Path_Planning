@@ -27,7 +27,7 @@
 %
 % ==================== PathTest =======================
 
-classdef PathTest < offlineanalysis.ExperimentalData 
+classdef PathTest < handle
     properties (Access = public)
       % Subclass-specific properties
       gait_names;         % should be cell array (or array) of chars representing 
@@ -39,6 +39,10 @@ classdef PathTest < offlineanalysis.ExperimentalData
       robo_states;
       gait_tests;
       keyframes;
+      switch_frames;
+      path_name;
+      poses;
+      pause_time;
       % Change in robot pose information w.r.t. local frame of tail state
       delta_x;         % change in x position (cm)
     
@@ -51,37 +55,55 @@ classdef PathTest < offlineanalysis.ExperimentalData
     methods
         % Constructor
         function this = PathTest( raw_data, path_sequence, gait_library,  params)
-          if nargin < 3
+          if nargin < 4
               params = [];
           end
           % Use super class constructor for basic data analysis
-          this@offlineanalysis.ExperimentalData( raw_data, params ); 
+          %this@offlineanalysis.ExperimentalData( raw_data, params ); 
+          this.set_property(params, 'pause_time', 0);
 
           this.gait_names = path_sequence.gait_names;
           this.gait_durations = path_sequence.gait_durations;
+          if length(this.pause_time) == 1 % if the pause-time is constant
+              this.pause_time = repmat(this.pause_time,1,length(this.gait_names)-1);
+          end
+          gait_library_names = '';
+          for i = 1:length(gait_library)
+              gait_library_names(i) = gait_library(i).gait_name;
+          end
+          this.gt_params = params;
+          this.gt_params.frame_1 = params.frame_1(1);
           this.keyframes = [];
+          this.switch_frames = [];
           % Extract parameters to use the GaitTest class.
           for i = 1:length(this.gait_names)*2-1
+              if i>1
+                  this.gt_params.frame_1 = this.gait_tests{i-1}.keyframes(end)+1;
+              end
               if mod(i,2) == 0 % if the index is even
-                  this.gt_params(i).n_cycles = 1;     % transition between gaits
-                  this.robo_states{i} = [(this.robo_states{i-1}(end)) 1];
+                  this.gt_params.n_cycles = 1;     % transition between gaits
+                  this.robo_states{i} = [(this.robo_states{i-1}(end)) 1 (this.robo_states{i}(1))];
               else
-                  this.gt_params(i).n_cycles = this.gait_durations(i);
-                  this.robo_states{i} = gait_library(gait_library.gait_names == this.gait_names(i)).robo_states;
+                  this.gt_params.n_cycles = this.gait_durations((i+1)/2);
+                  this.robo_states{i} = gait_library(gait_library_names == this.gait_names((i+1)/2)).robo_states;
+                  if length(params.frame_1) > 1 
+                      if params.frame_1((i+1)/2) ~= 0
+                        this.gt_params.frame_1 = params.frame_1((i+1)/2);
+                      end
+                  end
               end
-              if i ==1
-                  this.gt_params(i).frame_1 = params.frame_1;
-              else
-                  this.gt_params(i).frame_1 = this.gait_tests{i-1}.keyframes(end)+1;
-              end
-              this.gait_tests{i} = offlineanalysis.GaitTest( raw_data, this.robo_states{i}, this.gt_params(i));
+
+              this.switch_frames(i) = this.gt_params.frame_1-1;
+              this.gait_tests{i} = offlineanalysis.GaitTest( raw_data, this.robo_states{i}, this.gt_params);
               this.delta_x{i} = this.gait_tests{i}.delta_x;
               this.delta_y{i} = this.gait_tests{i}.delta_y;
               this.delta_theta{i} = this.gait_tests{i}.delta_theta;
-              this.keyframes = [this.keyframes this.gait_tests{i}.keyframes];
+              this.keyframes = [this.keyframes; this.gait_tests{i}.keyframes];
           end
          this.keyframes = unique(this.keyframes);
-          
+          all_data = offlineanalysis.ExperimentalData(raw_data, params);
+          this.poses = all_data.poses;
+
         end
         
     
@@ -101,38 +123,18 @@ classdef PathTest < offlineanalysis.ExperimentalData
             
             % Extract the global poses for every keyframe.
             key_poses = this.poses(:, this.keyframes);
-            % Reconstruct the keyframe positions from motion primitives.
-            pose_check(:, 1) = this.poses(:, this.keyframes(2));
-            %R = [cos(pose_check(3, 1)) -sin(pose_check(3, 1));
-             %   sin(pose_check(3, 1)) cos(pose_check(3, 1))];
-            R =  eul2rotm([pose_check(3,1) 0 0]);
-            pos = [pose_check(1:2, 1); 0];
-            k=0;
-            for i = 1:this.n_cycles
-                for j = 1:this.len_gait
-                    k = k+1;
-                    delta_x_local = this.delta_x(i, j);
-                    delta_y_local = this.delta_y(i, j);
-                    R_local = eul2rotm([this.delta_theta(i,j) 0 0]);
-                    % Use body-frame transformation formula:
-                    pos = R*[delta_x_local; delta_y_local; 0] + pos;
-                    % Post-multiply for intrinsic rotations.
-                    R = R*R_local;
-                    % Store global position data for verification.
-                    pose_check(:, k+1) = pos;
-                end
-            end
-            Poses = key_poses(:,1:this.len_gait:end);
+
+            Poses = this.poses(:, this.switch_frames);
 
             w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
             hold on
             plot(this.poses(1,:), this.poses(2,:))
             xlabel('x (cm)')
             ylabel('y (cm)')
-           title("Gait [" + num2str(this.robo_states) + "]")
+           title("Path")
             hold on
             sz = 30;
-            c1 = linspace(1,this.n_cycles,length(this.keyframes));
+            c1 = linspace(1,10,length(this.switch_frames));
             c2 = [0.6350 0.0780 0.1840];
 
             scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled');
