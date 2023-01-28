@@ -151,9 +151,12 @@ motion_primitive_data = cat(3, delta_x_data, delta_y_data, delta_theta_data);
 params_3.robot_name = 'MTA3';
 params_3.substrate= 'black mat';
 params_3.n_unique_states = 8;
-params_3.alpha_var = [0 0 0]';
+params_3.alpha_var = .5*[1 1 1]';
 params_3.MAX_ROTATION = deg2rad(1);
-params_3.goal = 1;
+params_3.MAX_TRANSLATION = .15;
+params_3.goal = 2;
+params_3.alpha_len = .05;
+params_3.n_variations = 200;
 
 % [3] == Instantiate GaitSynthesizer() object to generate gaits from motion
 % primitive data.

@@ -151,9 +151,11 @@ motion_primitive_data = cat(3, delta_x_data, delta_y_data, delta_theta_data);
 params_3.robot_name = 'MTA3';
 params_3.substrate= 'black mat';
 params_3.n_unique_states = 8;
-params_3.alpha_var = [0 0 0]';
+params_3.alpha_var = .25*[1 1 1]';
 params_3.MAX_ROTATION = deg2rad(1);
-params_3.goal = 1;
+params_3.goal = 2;
+params_3.alpha_len = .2;
+
 
 % [3] == Instantiate GaitSynthesizer() object to generate gaits from motion
 % primitive data.
@@ -193,8 +195,8 @@ end
 
 grid on 
 hold on
-plus_sd = avg_motions(i,:)+2*stand_devs(i,:);
-minus_sd = avg_motions(i,:)-2*stand_devs(i,:);
+plus_sd = avg_motions(i,:)+stand_devs(i,:);
+minus_sd = avg_motions(i,:)-stand_devs(i,:);
 % plot(x,plus_sd,'r')
 % plot(x,minus_sd,'r')
 p=fill([x fliplr(x)],[plus_sd fliplr(minus_sd)],'b','FaceAlpha',0.2, 'DisplayName',"\pm 1\sigma predicted");
@@ -252,6 +254,6 @@ plot(3:N, mean(avg_std))
 ylabel('Average Standard Deviation')
 yyaxis right
 plot(3:N, mean(avg_tot))
-errorbar(3:N, mean(avg_tot), avg_tot_err(i,:))
+errorbar(3:N, mean(avg_tot), var(avg_tot))
 ylabel('Average Motion')
 title('Total motion')
