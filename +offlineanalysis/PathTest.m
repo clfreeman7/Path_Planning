@@ -82,14 +82,19 @@ classdef PathTest < handle
               end
               if mod(i,2) == 0 % if the index is even
                   this.gt_params.n_cycles = 1;     % transition between gaits
-                  this.robo_states{i} = [(this.robo_states{i-1}(end)) 1 (this.robo_states{i}(1))];
+                  this.robo_states{i} = [(this.robo_states{i-1}(end)) 1];
+                  this.robo_states{i} = [this.robo_states{i} gait_library(gait_library_names == this.gait_names((i/2)+1)).robo_states(1)];
               else
                   this.gt_params.n_cycles = this.gait_durations((i+1)/2);
                   this.robo_states{i} = gait_library(gait_library_names == this.gait_names((i+1)/2)).robo_states;
                   if length(params.frame_1) > 1 
                       if params.frame_1((i+1)/2) ~= 0
                         this.gt_params.frame_1 = params.frame_1((i+1)/2);
+                      else
+                          break;
                       end
+                  else
+                     this.gt_params.frame_1 = this.keyframes(end)+1;
                   end
               end
 
@@ -128,19 +133,25 @@ classdef PathTest < handle
 
             w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
             hold on
-            plot(this.poses(1,:), this.poses(2,:))
+            
             xlabel('x (cm)')
             ylabel('y (cm)')
            title("Path")
             hold on
             sz = 30;
-            c1 = linspace(1,10,length(this.switch_frames));
+            c1 = [0.6350 0.0780 0.1840];
             c2 = [0.6350 0.0780 0.1840];
-
-            scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled');
+            gaits_in_path = unique(this.gait_names);
+            color_array = ["#0072BD", "#D95319", "#EDB120", "#7E2F8E", "#77AC30", "#4DBEEE"];
+            colors = color_array(1:numel(gaits_in_path));
+            for i = 1:length(this.switch_frames)
+                plot(this.poses(1,:), this.poses(2,:))
+                 scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled');
              %scatter(pose_check(1, :), pose_check(2, :),sz, c2)
              scatter(key_poses(1, :), key_poses(2, :),sz, c2)
              quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0)
+            end
+           
             %legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
             %       'Keyframe Positions Reconstructed from Motion Primitives')
              daspect([1 1 1]);

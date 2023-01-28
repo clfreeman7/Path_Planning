@@ -163,6 +163,9 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
                 delta_X_global = key_poses(1:2, k+2) - key_poses(1:2, k+1);
                 % Orientation of initial pose w.r.t. global frame.
                 R_Global = this.rotm_global(:, :, this.keyframes(k+1));
+                 if R_Global(3,3)<0
+                     R_Global = eul2rotm([key_poses(3,k+1) 0 0]);
+                 end
                 delta_X_local = R_Global' * [delta_X_global; 0];
                 unordered_deltas(1:2, k) = delta_X_local(1:2);
             end
@@ -189,19 +192,22 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             
             % Reconstruct the keyframe positions from motion primitives.
             pose_check(:, 1) = this.poses(:, this.keyframes(2));
-            R =  eul2rotm([pose_check(3,1) 0 0]);
-            pos = [pose_check(1:2, 1); 0];
+            theta_1 = pose_check(3,1);
+            R =  [cos(theta_1) -sin(theta_1); sin(theta_1) cos(theta_1)];
+            pos = pose_check(1:2, 1);
             for i = 1:this.n_unique_states*(this.n_unique_states-1)
                 k = this.primitive_labels(i);
                 delta_x_local = this.delta_x(k);
                 delta_y_local = this.delta_y(k);
-                R_local = eul2rotm([this.delta_theta(k) 0 0]);
+                theta = this.delta_theta(k);
+                R_local = [cos(theta) -sin(theta); sin(theta) cos(theta)];
                 % Use body-frame transformation formula:
-                pos = R*[delta_x_local; delta_y_local; 0] + pos;
+                pos = R*[delta_x_local; delta_y_local] + pos;
                 % Post-multiply for intrinsic rotations.
                 R = R*R_local;
                 % Store global position data for verification.
-                pose_check(:, i+1) = pos;
+                pose_check(1:2, i+1) = pos;
+                pose_check(3, i+1) = pose_check(3, i) + theta;
             end
 
 % Reconstruct the Euler tour trajectory using the SE2 class and motion
@@ -211,7 +217,7 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
 
             hold on
-            plot(this.poses(1,:) - this.poses(1,1), this.poses(2,:)- this.poses(2,1))
+            plot(this.poses(1,:), this.poses(2,:))
             xlabel('x (cm)')
             ylabel('y (cm)')
             daspect([1 1 1])

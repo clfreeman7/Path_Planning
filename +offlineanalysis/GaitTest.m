@@ -175,6 +175,9 @@ classdef GaitTest < offlineanalysis.ExperimentalData
                 delta_X_global = key_poses(1:2, k+2) - key_poses(1:2, k+1);
                 % Orientation of initial pose w.r.t. global frame.
                 R_Global = this.rotm_global(:, :, this.keyframes(k+1));
+                 if R_Global(3,3)<0
+                     R_Global = eul2rotm([key_poses(3,k+1) 0 0]);
+                 end
                 delta_X_local = R_Global' * [delta_X_global; 0];
                 unordered_deltas(1:2, k) = delta_X_local(1:2); 
             end
@@ -225,11 +228,11 @@ classdef GaitTest < offlineanalysis.ExperimentalData
             c2 = [0.6350 0.0780 0.1840];
 
             scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled');
-             %scatter(pose_check(1, :), pose_check(2, :),sz, c2)
+             scatter(pose_check(1, :), pose_check(2, :),sz, c2)
              scatter(key_poses(1, :), key_poses(2, :),sz, c2)
              quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0)
-            %legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
-            %       'Keyframe Positions Reconstructed from Motion Primitives')
+            legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
+                   'Keyframe Positions Reconstructed from Motion Primitives')
              daspect([1 1 1]);
              grid on;
         end

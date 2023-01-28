@@ -88,7 +88,7 @@ classdef GaitSynthesizer < handle
            this.set_property(params, 'substrate', 'undefined');
            this.set_property(params, 'n_unique_states', 16);
            this.set_property(params, 'alpha_motion', 4*[1 1 1]');
-           this.set_property(params, 'alpha_var', 0.5*[1 1 1]');
+           this.set_property(params, 'alpha_var', 1*[1 1 1]');
            this.set_property(params, 'alpha_len', 1.5);
            this.set_property(params, 'n_variations', 100);
            this.set_property(params, 'MAX_ITER', 50);
