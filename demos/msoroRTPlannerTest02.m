@@ -26,7 +26,7 @@ rad_falloff = 23;             % radial decay constant for obstacle costs (grid u
                               % tune this between ~20-25 to adjust % trajectory results
 
 % Planning parameters
-obstacle_threshold = 10;      % cost value at which a location is identified as obstacle
+obstacle_threshold = 10;      % cost value beyond which a location is identified as obstacle
 stop_radius = 50*gridS.dg;    % goal radius within which planning completes
 
 
