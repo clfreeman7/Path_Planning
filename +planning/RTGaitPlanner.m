@@ -136,6 +136,8 @@ classdef RTGaitPlanner < pathGen.RTGreedyPlanner
       assert ( size(a_bin_scenario_img, 3) == 1, ...
                   '[RTGaitPlanner::setScenario()] Input scenario must be a binary image.');
 
+      a_bin_scenario_img = uint8(a_bin_scenario_img > 0);     % enforce 'uint8' binary (0 or 1 only) data 
+
       % Convert binary image to cost map
       img_scaling = max(this.gridS.size)/max(size(a_bin_scenario_img));    % (binary) scenario image -> grid world scaling
       cf = pathGen.RTGreedyPlanner.binImg2CostMap(a_bin_scenario_img, img_scaling, a_rad_falloff);
@@ -161,6 +163,25 @@ classdef RTGaitPlanner < pathGen.RTGreedyPlanner
                   '[RTGaitPlanner::planTrajectory()] Specified start pose is not of type SE2.');
       assert ( length(a_goal_position) == 2, ...
                   '[RTGaitPlanner::planTrajectory()] Specified goal position is not length 2.');
+
+      % Validate start pose and goal position
+      max_valid_x_coord = this.gridS.cmin(1) + this.gridS.size(1)*this.gridS.dg;
+      max_valid_y_coord = this.gridS.cmin(2) + this.gridS.size(2)*this.gridS.dg;
+      min_valid_x_coord = this.gridS.cmin(1);
+      min_valid_y_coord = this.gridS.cmin(2);
+
+      start_pos = a_start_pose.getTranslation();
+      start_pos_valid = (start_pos(1) >= min_valid_x_coord) && (start_pos(1) <= max_valid_x_coord) && ...
+                          (start_pos(2) >= min_valid_y_coord) && (start_pos(2) <= max_valid_y_coord);
+      assert ( start_pos_valid, ...
+                  '[RTGaitPlanner::planTrajectory()] Invalid start pose provided: [%.2f, %.2f]. Valid x-coordinate range is [%.2f, %.2f]; valid y-coordinate range is [%.2f, %.2f].', ...
+                    start_pos(1), start_pos(2), min_valid_x_coord, max_valid_x_coord, min_valid_y_coord, max_valid_y_coord);
+
+      goal_pos_valid = (a_goal_position(1) >= min_valid_x_coord) && (a_goal_position(1) <= max_valid_x_coord) && ...
+                          (a_goal_position(2) >= min_valid_y_coord) && (a_goal_position(2) <= max_valid_y_coord);
+      assert ( goal_pos_valid, ...
+                  '[RTGaitPlanner::planTrajectory()] Invalid goal pose provided: [%.2f, %.2f]. Valid x-coordinate range is [%.2f, %.2f]; valid y-coordinate range is [%.2f, %.2f].', ...
+                    a_goal_position(1), a_goal_position(2), min_valid_x_coord, max_valid_x_coord, min_valid_y_coord, max_valid_y_coord);
 
       % Check planner is properly setup
       planner_primed = true;

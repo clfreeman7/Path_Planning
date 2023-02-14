@@ -17,9 +17,9 @@ world = 4;                              % scenario selection: 1 through 4
 world_construct_method = 'actual';      % 'ideal' or 'actual' (ideal planned world vs. actual captured binary world)
 
 % Grid world properties
-gridS.dg = 1.565430166666667;     % grid size, or pixels-to-cm (cm/px) conversion
+gridS.dg = 1.565430166666667;     % grid size, or grid-to-cm (cm/grid) conversion
 gridS.cmin = [0, 0];              % physical world coordinates cooresponding to grid world bottom-left location
-gridS.size = [336, 336];          % grid world dimensions [x, y]
+gridS.size = [336, 336];          % grid world dimensions [x, y] (grid units)
 
 % Cost map construction
 rad_falloff = 23;             % radial decay constant for obstacle costs (grid units)
