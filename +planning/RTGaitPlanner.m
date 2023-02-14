@@ -151,9 +151,9 @@ classdef RTGaitPlanner < pathGen.RTGreedyPlanner
     % to goal position (i.e. E(2))
     %
     % Input(s):
-    %   a_start_pose:           planar starting pose
+    %   a_start_pose:           planar starting pose, [x cm, y cm, theta rad] 
     %                           (class instance: SE2) 
-    %   a_goal_position:        2-D goal position, [x, y]
+    %   a_goal_position:        2-D goal position, [x, y] cm
     % 
     % Output(s):
     %   gait_trajectory_plan:        gait-based trajectory plan (locomgmt.locotraj.LocomotionTrajectory() instance) 
