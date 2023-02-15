@@ -8,12 +8,12 @@
 %
 
 % [0] == Script usage
-GAIT_LIBRARY_MAT = 'data/gait_library_4.mat';
+GAIT_LIBRARY_MAT = 'data/gait_library_5.mat';
 % GAIT_LIBRARY_MAT = 'data/gait_library_demo.mat';  % fictitious gait library for demo purposes (contains fictitious gaits: B (rot), G (trans), I (trans), J (trans), K (trans)
 MSORO_PGM = 'data/starfish1.pgm';
 
 % World selection
-world = 4;                              % scenario selection: 1 through 4
+world = 1;                              % scenario selection: 1 through 4
 world_construct_method = 'actual';      % 'ideal' or 'actual' (ideal planned world vs. actual captured binary world)
 
 % Grid world properties
