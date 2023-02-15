@@ -163,8 +163,8 @@ classdef GaitTest < offlineanalysis.ExperimentalData
         
         function calculate_local_motions(this)
             % Extract the global poses for every keyframe.
-            key_poses = this.raw_poses(:, this.keyframes);
-            key_poses(1:2, :) = key_poses(1:2, :)* this.pixel_length; 
+            key_poses = this.poses(:, this.keyframes);
+            %key_poses(1:2, :) = key_poses(1:2, :)* this.pixel_length; 
             % Define local changes in these poses w.r.t. to each tail pose. 
             unordered_deltas = zeros(3, length(this.keyframes)-2);
 
@@ -190,32 +190,31 @@ classdef GaitTest < offlineanalysis.ExperimentalData
         end
 
         function plot(this)
-            
             % Extract the global poses for every keyframe.
             key_poses = this.poses(:, this.keyframes);
             % Reconstruct the keyframe positions from motion primitives.
             pose_check(:, 1) = this.poses(:, this.keyframes(2));
-            %R = [cos(pose_check(3, 1)) -sin(pose_check(3, 1));
-             %   sin(pose_check(3, 1)) cos(pose_check(3, 1))];
-            R =  eul2rotm([pose_check(3,1) 0 0]);
-            pos = [pose_check(1:2, 1); 0];
+            theta_1 = this.raw_poses(3,this.keyframes(2));
+            R =  [cos(theta_1) -sin(theta_1); sin(theta_1) cos(theta_1)];
+            pos = pose_check(1:2, 1);
             k=0;
             for i = 1:this.n_cycles
                 for j = 1:this.len_gait
                     k = k+1;
                     delta_x_local = this.delta_x(i, j);
                     delta_y_local = this.delta_y(i, j);
-                    R_local = eul2rotm([this.delta_theta(i,j) 0 0]);
+                    theta = this.delta_theta(i,j);
+                    R_local = [cos(theta) -sin(theta); sin(theta) cos(theta)];
                     % Use body-frame transformation formula:
-                    pos = R*[delta_x_local; delta_y_local; 0] + pos;
+                    pos = R*[delta_x_local; delta_y_local] + pos;
                     % Post-multiply for intrinsic rotations.
                     R = R*R_local;
                     % Store global position data for verification.
-                    pose_check(:, k+1) = pos;
+                    pose_check(1:2, k+1) = pos;
+                    pose_check(3, k+1) = pose_check(3, k) + theta;
                 end
             end
-            Poses = key_poses(:,1:this.len_gait:end);
-
+            Poses = key_poses(:,1:this.len_gait*10:end);
             w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
             hold on
             plot(this.poses(1,:), this.poses(2,:))
@@ -229,7 +228,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
 
             scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled');
              scatter(pose_check(1, :), pose_check(2, :),sz, c2)
-             scatter(key_poses(1, :), key_poses(2, :),sz, c2)
+             %scatter(key_poses(1, :), key_poses(2, :),sz, c2)
              quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0)
             legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
                    'Keyframe Positions Reconstructed from Motion Primitives')

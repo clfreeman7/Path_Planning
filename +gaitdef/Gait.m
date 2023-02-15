@@ -29,6 +29,8 @@ classdef Gait < handle
       tether;              % tether  
 
       tether_protocol;
+
+      tether_placement;
       
       n_unique_states;     % number of unique robot states
       

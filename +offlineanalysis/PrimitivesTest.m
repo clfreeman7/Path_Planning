@@ -192,7 +192,7 @@ classdef PrimitivesTest < offlineanalysis.ExperimentalData
             
             % Reconstruct the keyframe positions from motion primitives.
             pose_check(:, 1) = this.poses(:, this.keyframes(2));
-            theta_1 = pose_check(3,1);
+            theta_1 = this.raw_poses(3,this.keyframes(2));
             R =  [cos(theta_1) -sin(theta_1); sin(theta_1) cos(theta_1)];
             pos = pose_check(1:2, 1);
             for i = 1:this.n_unique_states*(this.n_unique_states-1)

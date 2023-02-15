@@ -114,30 +114,41 @@ classdef ExperimentalData < handle
           end
         end
         
+
         % Find the rotation matrix, translation vector, and pose for each 
         % frame w.r.t. the global coordinate system (GCS).
         function process_data(this, raw_data)
+
             % Calculate raw global robot position in pixels.
             pos = [mean(this.marker_x_pos, 2)'; 
                    mean(this.marker_y_pos, 2)';
                    mean(this.marker_z_pos, 2)']; 
+
+            % Initialized rotated center position.
             rotated_pos = pos;
+
             for i = 1:this.n_frames
                 % Rotation matrices and translation vectors have already
                 % been calculated and stored in raw data file. Extract:
                 rg_idx = 3*this.n_markers+9+3+1;
                 this.rotm_global(:, :, i) = reshape(raw_data(i, rg_idx:rg_idx+8), [3,3]);
+                % Correct for z-axis tracking errors if needed.
+                if this.rotm_global(3, 3, i)<0
+                    eul_angles = rotm2eul(this.rotm_global(:, :, i));
+                    this.rotm_global(:,:,i) = eul2rotm([eul_angles(1) 0 0]);
+                end
                 % Multiply by initial rotation matrix:
                 if i == 1
                     this.rotm_global(:, :, i) = this.R_1';
                 else
-                this.rotm_global(:, :, i) = this.R_1' * this.rotm_global(:, :, i);
+                    this.rotm_global(:, :, i) = this.R_1' * this.rotm_global(:, :, i);
                 end
                 this.t_global(:, i) =  this.R_1' * raw_data(i, rg_idx+9:rg_idx+11)';
+
                 % Use built-in MATLAB command to convert rotation matrix
                 % to Euler angles.
-                
                 eul_angles = rotm2eul(this.rotm_global(:, :, i));
+                % Store first angle.
                 % Use these to calculate the pose of the robot center.
                 rotated_pos(:, i) = this.R_1'*(pos(:,i)-pos(:,1));
 
