@@ -112,7 +112,7 @@ switch world
     end
 
     trajectory_data = load(world_mat_file).trajectory_data;
-    plan_num = 8;     % TROUBLESHOOT -> CONVERSION ISSUE MPs -> TRAJ
+    plan_num = 1;     % TROUBLESHOOT -> CONVERSION ISSUE MPs -> TRAJ
     start_pose = trajectory_data{plan_num}.poses(:, 1);%[36*gridS.dg ; 36*gridS.dg ; 0] ;
     goal_position = trajectory_data{plan_num}.poses(1:2, end);%[290 ; 75]*gridS.dg;
 end
@@ -139,9 +139,11 @@ rtGaitPlanner.setGaits( rot_gaits, trans_gaits );
 
 
 % [4] == Plan discrete-time controlled trajectory
+%   === 1st planning run
 tic;
-  trajectory_plan = rtGaitPlanner.planTrajectory(SE2(start_pose(1:2), start_pose(3)), goal_position);
+  trajectory_plan1 = rtGaitPlanner.planTrajectory(SE2(start_pose(1:2), start_pose(3)), goal_position);
 toc
+trajectory_plan1
 
 % Visualize result
 %   Extract MSoRo outline
@@ -157,6 +159,30 @@ scen_props.px2cm = gridS.dg;
 scen_props.radStop = 50*scen_props.px2cm;
 scen_props.startPose = start_pose;
 scen_props.goalPosition = goal_position;
-planning.RTGaitPlanner.plotTrajectory(trajectory_plan, scen_props, gait_library, fig_hdl, msoro_outline);
+planning.RTGaitPlanner.plotTrajectory(trajectory_plan1, scen_props, gait_library, fig_hdl, msoro_outline);
 
+%   === 2nd planning run
+plan_num = 8;     % TROUBLESHOOT -> CONVERSION ISSUE MPs -> TRAJ
+start_pose = trajectory_data{plan_num}.poses(:, 1);%[36*gridS.dg ; 36*gridS.dg ; 0] ;
+goal_position = trajectory_data{plan_num}.poses(1:2, end);%[290 ; 75]*gridS.dg;
 
+tic;
+  trajectory_plan2 = rtGaitPlanner.planTrajectory(SE2(start_pose(1:2), start_pose(3)), goal_position);
+toc
+trajectory_plan2
+
+% Visualize result
+%   Extract MSoRo outline
+msoro_img_file = MSORO_PGM;
+msoro_img_scaling = 35/525.3047;   % pixel-to-cm (i.e. cm/px) scaling for MSoRo image
+num_outline_pnts = 500;
+msoro_outline = planning.RTGaitPlanner.img2msoroOutline(msoro_img_file, msoro_img_scaling, num_outline_pnts);  % MSoRo outline coordinates (cm)
+
+%   Plot trajectory /w MSoRo outline overlaid
+fig_hdl = figure;
+scen_props.image = cf;
+scen_props.px2cm = gridS.dg;
+scen_props.radStop = 50*scen_props.px2cm;
+scen_props.startPose = start_pose;
+scen_props.goalPosition = goal_position;
+planning.RTGaitPlanner.plotTrajectory(trajectory_plan2, scen_props, gait_library, fig_hdl, msoro_outline);
