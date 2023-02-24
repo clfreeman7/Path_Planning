@@ -166,8 +166,8 @@ function plot_all_deviations(mp_data)
     avg_motions = squeeze(mean(mp_data, 1))';
     avg_motions(3,:) = rad2deg(avg_motions(3,:));
     var_motions = squeeze(var(mp_data, 0, 1))';
-    var_motions(3,:) = rad2deg(var_motions(3,:));
     stand_devs = var_motions.^(.5);
+    stand_devs(3,:) = rad2deg(stand_devs(3,:));
     tiledlayout(3, 1)
         for i = 1:3
         nexttile;

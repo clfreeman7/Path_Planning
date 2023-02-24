@@ -163,10 +163,10 @@ params_3.n_variations = 300;
 
 % [3] == Instantiate GaitSynthesizer() object to generate gaits from motion
 % primitive data.
-gait_synthesis = offlineanalysis.GaitSynthesizer( motion_primitive_data , params_3)
-gaits = gait_synthesis.solutions
+%gait_synthesis = offlineanalysis.GaitSynthesizer( motion_primitive_data , params_3)
+%gaits = gait_synthesis.solutions
 
-save data/MTA3_motion_primitives_mat.mat motion_primitive_data
+save data/MTA3_motion_primitives_carpet_new.mat motion_primitive_data
 
 
 % Find mean, variance, and standard deviation of data.

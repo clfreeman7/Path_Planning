@@ -1,5 +1,5 @@
 clear all; clc; close all
-load 'data/MTA3_motion_primitives_carpet.mat';
+load 'data/MTA3_motion_primitives_mat.mat';
 % Add dependencies to classpath
 addpath('../');
 addpath('ivaMatlibs')
@@ -14,11 +14,13 @@ n_sequences = length(all_sequences);
 params.robot_name = 'MTA3';
 params.n_unique_states = 8;
 params.transition_time = .55;
-params.substrate = 'carpet';
-Sequence = cell(n_sequences, 1);-
+params.substrate = 'black_mat';
+Sequence = cell(n_sequences, 1);
 Length = zeros(n_sequences, 1);
 Translation = zeros(n_sequences, 1);
 Rotation = zeros(n_sequences, 1);
+Rot_Speed = zeros(n_sequences, 1);
+Linear_Speed = zeros(n_sequences, 1);
 Velocity = zeros(n_sequences, 3);
 TranslationCost = zeros(n_sequences, 1);
 
@@ -27,20 +29,22 @@ for i = 1:length(all_sequences)
     predicted_gait = offlineanalysis.GaitPredict( all_sequences{i},  motion_primitive_data, params);
     % Instantiate a Gait() object.
     all_gaits(i) = gaitdef.Gait(predicted_gait, params);
-    g{i} = SE2.exp(all_gaits(i).Twist', all_gaits(i).len_gait*params.transition_time);
+    g{i} = SE2(all_gaits(i).Delta_Pose(1:2,:),all_gaits(i).Delta_Pose(3,:));
     Sequence{i} = all_gaits(i).robo_states;
     Length(i) = all_gaits(i).len_gait;
     Translation(i) = norm(g{i}.getTranslation);
     Rotation(i) = rad2deg(g{i}.getAngle);
+    Rot_Speed(i) = abs(Rotation(i))/(all_gaits(i).len_gait*all_gaits(i).transition_time);
+    Linear_Speed(i) = abs(Translation(i))/(all_gaits(i).len_gait*all_gaits(i).transition_time);
     Velocity(i,:) =all_gaits(i).Twist';
     TranslationCost(i) = abs(sum(all_gaits(i).delta_poses(1,:)))+ abs(sum(all_gaits(i).delta_poses(2,:)));
 end
     
-comparison_table = table(Sequence, Length, Translation, Rotation, Velocity, TranslationCost);
+comparison_table = table(Sequence, Length, Translation, Rotation, Velocity, Rot_Speed, Linear_Speed,TranslationCost);
 %%
 % Maximize translation.
-translation_table = comparison_table(abs(comparison_table.Rotation)<1,:);
+translation_table = comparison_table(abs(comparison_table.Rot_Speed)<1,:);
 translation_table = sortrows(translation_table, "Translation");
 % Maximize rotation.
-rotation_table = comparison_table(abs(comparison_table.Translation)<.1,:);
+rotation_table = comparison_table(abs(comparison_table.Linear_Speed)<.2,:);
 rotation_table = sortrows(rotation_table, "Rotation");

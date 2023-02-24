@@ -58,7 +58,7 @@ for i = 1:10
     % Extract and store first frame information.
     exp(i).params.frame_1 = frame_start_list(i);
     % Extract and store raw data from each trial.
-    filename = ['data/visualtracking/MTA3/Euler_', num2str(i), '_L.mat'];
+    filename = ['data/visualtracking/MTA3/Black_Mat/Euler_', num2str(i), '_L.mat'];
     exp(i).raw_data = load(filename).tracking_data;  
 end
 figure(1)
@@ -66,7 +66,7 @@ tiledlayout(2,5)
 for i = 1:10
     pic_name = sprintf('firstframe_Euler_%02d', i);
     % Plot first image of experiment video.
-    file_name = ['data/visualtracking/MTA3/', pic_name, '.jpg'];
+    file_name = ['data/visualtracking/MTA3/Black_Mat/', pic_name, '.jpg'];
     pic = imread(file_name);
     nexttile;
     imshow(pic)
@@ -160,8 +160,8 @@ params_3.n_variations = 200;
 
 % [3] == Instantiate GaitSynthesizer() object to generate gaits from motion
 % primitive data.
-gait_synthesis = offlineanalysis.GaitSynthesizer( motion_primitive_data , params_3)
-gaits = gait_synthesis.solutions
+%gait_synthesis = offlineanalysis.GaitSynthesizer( motion_primitive_data , params_3)
+%gaits = gait_synthesis.solutions
 
 save data/MTA3_motion_primitives_mat.mat motion_primitive_data
 

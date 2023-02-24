@@ -11,10 +11,10 @@
 
 % ==================== GaitPredict =======================
 
-classdef GaitPredict
+classdef GaitPredict<handle
     properties (Access = public)
       % Subclass-specific properties
-      n_unique_states = 16;     % number of unique robot states
+      n_unique_states;     % number of unique robot states
       
       robo_states;         % sequence of robot states e.g., [1, 7, 16, ...] 
                            % that defines a gait
@@ -59,13 +59,13 @@ classdef GaitPredict
           % Define the sequence of motion primitive labels.
           this.primitive_labels = this.states_to_primitives;
 
-          this.delta_x = avg_motions(this.primitive_labels,1);
-          this.delta_y = avg_motions(this.primitive_labels,2);
-          this.delta_theta = avg_motions(this.primitive_labels,3);
+          this.delta_x = avg_motions(this.primitive_labels,1)';
+          this.delta_y = avg_motions(this.primitive_labels,2)';
+          this.delta_theta = avg_motions(this.primitive_labels,3)';
 
-          this.var_x = var_motions(this.primitive_labels,1);
-          this.var_y = var_motions(this.primitive_labels,2);
-          this.var_theta = var_motions(this.primitive_labels,3);
+          this.var_x = var_motions(this.primitive_labels,1)';
+          this.var_y = var_motions(this.primitive_labels,2)';
+          this.var_theta = var_motions(this.primitive_labels,3)';
          end
 
         % Set parameter value for class-instance, based on user specified 

@@ -110,13 +110,13 @@ classdef Gait < handle
                 delta_y = [delta_y; gait_data_object(i).delta_y];
                 delta_theta = [delta_theta; gait_data_object(i).delta_theta];
             end
-            this.delta_poses(1,:) = mean(delta_x);
-            this.delta_poses(2,:) = mean(delta_y);
-            this.delta_poses(3,:) = mean(delta_theta);
+            this.delta_poses(1,:) = mean(delta_x,1);
+            this.delta_poses(2,:) = mean(delta_y,1);
+            this.delta_poses(3,:) = mean(delta_theta,1);
 
-            this.var_delta_poses(1,:) = var(delta_x);
-            this.var_delta_poses(2,:) = var(delta_y);
-            this.var_delta_poses(3,:) = var(delta_theta);
+            this.var_delta_poses(1,:) = var(delta_x,0,1);
+            this.var_delta_poses(2,:) = var(delta_y,0,1);
+            this.var_delta_poses(3,:) = var(delta_theta,0,1);
             this.calculate_total_motion;
 
             % Convert change in robot pose to body twists.
@@ -225,8 +225,9 @@ classdef Gait < handle
             scatter(pose(1,:), pose(2,:), sz, c1, 'filled')
             scatter(Pose(1, :), Pose(2, :),sz, c2)
             daspect([1 1 1]);
-           
-            quiver(Pose(1,:), Pose(2,:), w*cos(Pose(3,:)), w*sin(Pose(3,:)),0)
+            spaced_arrows = 0:10:n_cycles;
+            spaced_arrows(1) = 1;
+            quiver(Pose(1,spaced_arrows), Pose(2,spaced_arrows), w*cos(Pose(3,spaced_arrows)), w*sin(Pose(3,spaced_arrows)),0)
         end
         
     end  %methods
