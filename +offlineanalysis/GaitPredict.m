@@ -25,8 +25,10 @@ classdef GaitPredict<handle
       
       len_gait;            % length of the gait (number of robot states)
      
-      
+       
       % Change in robot pose information w.r.t. local frame of tail state
+      pose_1;           % initial robot pose (cm, cm, rad)
+
       delta_x;         % change in x position (cm)
     
       delta_y;         % change in y position (cm)
@@ -46,7 +48,8 @@ classdef GaitPredict<handle
               params = [];
           end
           this.set_property(params, 'n_unique_states', 16);
-          
+          this.set_property(params, 'pose_1', [0 0 0]');
+
           % Define sequence of robot states.
           this.robo_states = gait_sequence;
           
@@ -113,10 +116,12 @@ classdef GaitPredict<handle
 
         function pose = plot(this, n_cycles)
             
-            R =  eye(3);
-            pos = [0; 0; 0];
+            R = eul2rotm([this.pose_1(3) 0 0]);
+            pos = [this.pose_1(1:2); 0];
             k=0;
             pose = zeros(3, n_cycles*this.len_gait+1);
+            pose(:,1) = pos;
+            pose(3,1) = this.pose_1(3);
             for i = 1:n_cycles
                 for j = 1:this.len_gait
                     k = k+1;
@@ -128,7 +133,7 @@ classdef GaitPredict<handle
                     % Post-multiply for intrinsic rotations.
                     R = R*R_local;
                     % Store global position data for verification.
-                    pose(:, k+1) = pos;
+                    pose(1:2, k+1) = pos(1:2);
                     pose(3,k+1) = pose(3,k) + this.delta_theta(j);
                 end
             end

@@ -214,7 +214,9 @@ classdef GaitTest < offlineanalysis.ExperimentalData
                     pose_check(3, k+1) = pose_check(3, k) + theta;
                 end
             end
-            Poses = key_poses(:,1:this.len_gait*10:end);
+            Poses = key_poses(:,1);
+            Poses = [Poses key_poses(:,this.len_gait*10:this.len_gait*10:end)];
+            
             w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
             hold on
             plot(this.poses(1,:), this.poses(2,:))

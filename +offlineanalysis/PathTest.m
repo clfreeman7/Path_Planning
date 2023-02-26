@@ -35,6 +35,7 @@ classdef PathTest < handle
 
 
       gait_durations;   % corresponding gait durations (time or number of gait periods)
+      gait_idx;
       gt_params;
       robo_states;
       gait_tests;
@@ -50,6 +51,7 @@ classdef PathTest < handle
       
       delta_theta;     % change in rotation (CCW is positive)
       
+
     end 
     
     methods
@@ -61,8 +63,12 @@ classdef PathTest < handle
           % Use super class constructor for basic data analysis
           %this@offlineanalysis.ExperimentalData( raw_data, params ); 
           this.set_property(params, 'pause_time', 0);
-
-          this.gait_names = path_sequence.gait_names;
+          if isstring(path_sequence.gait_names)
+              this.gait_names = char(path_sequence.gait_names);
+          else
+              this.gait_names = path_sequence.gait_names;
+          end
+          
           this.gait_durations = path_sequence.gait_durations;
           if length(this.pause_time) == 1 % if the pause-time is constant
               this.pause_time = repmat(this.pause_time,1,length(this.gait_names)-1);
@@ -87,17 +93,16 @@ classdef PathTest < handle
               else
                   this.gt_params.n_cycles = this.gait_durations((i+1)/2);
                   this.robo_states{i} = gait_library(gait_library_names == this.gait_names((i+1)/2)).robo_states;
+                  this.gait_idx((i+1)/2) = find(gait_library_names == this.gait_names((i+1)/2));
                   if length(params.frame_1) > 1 
                       if params.frame_1((i+1)/2) ~= 0
                         this.gt_params.frame_1 = params.frame_1((i+1)/2);
                       else
                           break;
                       end
-                  else
-                     this.gt_params.frame_1 = this.keyframes(end)+1;
                   end
               end
-
+             
               this.switch_frames(i) = this.gt_params.frame_1-1;
               this.gait_tests{i} = offlineanalysis.GaitTest( raw_data, this.robo_states{i}, this.gt_params);
               this.delta_x{i} = this.gait_tests{i}.delta_x;
@@ -128,7 +133,8 @@ classdef PathTest < handle
             
             % Extract the global poses for every keyframe.
             key_poses = this.poses(:, this.keyframes);
-
+            this.path_name = '';
+            this.switch_frames(end+1) = length(this.poses);
             Poses = this.poses(:, this.switch_frames);
 
             w = ((max(Poses(1,:))-min(Poses(1,:))).^2+(max(Poses(2,:))-min(Poses(2,:))).^2).^.5/10;
@@ -136,26 +142,32 @@ classdef PathTest < handle
             
             xlabel('x (cm)')
             ylabel('y (cm)')
-           title("Path")
+
             hold on
-            sz = 30;
-            c1 = [0.6350 0.0780 0.1840];
-            c2 = [0.6350 0.0780 0.1840];
-            gaits_in_path = unique(this.gait_names);
+            [gaits_in_path, lgd_idx] = unique(this.gait_names);
             color_array = ["#0072BD", "#D95319", "#EDB120", "#7E2F8E", "#77AC30", "#4DBEEE"];
-            colors = color_array(1:numel(gaits_in_path));
-            for i = 1:length(this.switch_frames)
-                plot(this.poses(1,:), this.poses(2,:))
-                 scatter(key_poses(1,:), key_poses(2,:), sz, c1, 'filled');
+             %plot(key_poses(1,:), key_poses(2,:), 'o', 'LineStyle','none');
+            for i = 1:length(this.gait_names)
+                h(i) = plot(this.poses(1,this.switch_frames(2*i-1):this.switch_frames(2*i)), ...
+                    this.poses(2,this.switch_frames(2*i-1):this.switch_frames(2*i)),...
+                    'Color',color_array(this.gait_idx(i)));
+                this.path_name = [this.path_name this.gait_names(i) num2str(this.gait_durations(i))];
+                if i<length(this.gait_names)
+                    this.path_name = [this.path_name ', '];
+                end
              %scatter(pose_check(1, :), pose_check(2, :),sz, c2)
-             scatter(key_poses(1, :), key_poses(2, :),sz, c2)
-             quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0)
+
             end
-           
+                        quiver(Poses(1,:), Poses(2,:), w*cos(Poses(3,:)), w*sin(Poses(3,:)),0,'k')
             %legend('Continuous Robot Position', 'Actual Keyframe Positions', ...
             %       'Keyframe Positions Reconstructed from Motion Primitives')
              daspect([1 1 1]);
+             title('Experimental Results', 'FontSize',36)
+             subtitle(strjoin(["Path", this.path_name]))
              grid on;
+             lgd = legend(h(lgd_idx),gaits_in_path,'Interpreter','latex','FontSize', 24);
+             lgd.Orientation = 'horizontal';
+             lgd.Location = 'northoutside';
         end
         
     end  %methods
