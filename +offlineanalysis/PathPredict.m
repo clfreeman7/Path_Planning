@@ -19,6 +19,7 @@ classdef PathPredict<handle
 
 
       gait_durations;   % corresponding gait durations (time or number of gait periods)
+      robo_states;
 
       gait_idx;
 
@@ -34,6 +35,8 @@ classdef PathPredict<handle
       pose_1;
       % Change in robot pose information w.r.t. local frame of tail state
       poses;
+      Poses;
+
     end 
     methods 
          % Constructor
@@ -69,6 +72,7 @@ classdef PathPredict<handle
               gait_library_names(i) = this.gait_library(i).gait_name;
           end
             this.poses(:,1) = this.pose_1;
+            this.Poses(:,1) = this.pose_1;
             if this.include_transitions
                 for i = 1:length(this.gait_names)*2-1
                     if mod(i,2) == 0 % if the index is even
@@ -103,6 +107,7 @@ classdef PathPredict<handle
                         end
                     end
                   this.switch_frames(2*i) = length(this.poses);
+                  this.Poses(:,end+1) = this.poses(:,end);
                 end
             end
 

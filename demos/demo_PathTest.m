@@ -8,11 +8,11 @@
 
 % [0] == Script setup
 clear; clc; close all
-show_markers = true;
+show_markers = false;
 
 % Add dependencies to classpath
 addpath('../');
-filename = 'data/visualtracking/orange MTA4 threaded/Trial_27.mat';
+filename = 'data/visualtracking/orange MTA4 threaded/Trial_28.mat';
 % 
 % Configure figure tex interpreters
 set(groot, 'defaultAxesTickLabelInterpreter','latex');
@@ -40,7 +40,7 @@ path_test.params.frame_1 = frame_start_list;
 
 % Define theta = 0 for the robot based on the ground truth for the gait
 % library calculation:
-reference_data = load('B_60_32SR_NF_L_1.mat').tracking_data;
+reference_data = load('data/visualtracking/orange MTA4 threaded/B_60_32SR_NF_L_1.mat').tracking_data;
 ref_marker_order = [2 3 4 1];
 markers_x(1, :) = reference_data(1, 1:3:path_test.params.n_markers*3-2);
 markers_y(1, :) = reference_data(1, 2:3:path_test.params.n_markers*3-1);
@@ -61,7 +61,7 @@ reference_markers = [markers_x(1, ref_marker_order); markers_y(1, ref_marker_ord
     % Find orientation of subsequent trials w.r.t. first trial GCS.
     [regParams,~,~] = absor(reference_markers, shifted_markers);
     path_test.params.R_1 = [regParams.R zeros(2,1); 0 0 1];
-
+path_test.params.R_1 = eye(3);
 
 
 
