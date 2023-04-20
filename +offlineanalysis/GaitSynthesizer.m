@@ -64,6 +64,9 @@ classdef GaitSynthesizer < handle
                            % correspond to alpha_motion, the second three
                            % correspond to alpha_var, and the last 
                            % corresponds to alpha_len.
+
+      actuator_states;     % [1 x n_a] logical vector denoting the states 
+                           % of all n_a actuators.
                            
       % Synthesis Outputs
       avg_motions;         % [3 x n] mean translation and rotation for all
@@ -95,6 +98,7 @@ classdef GaitSynthesizer < handle
            this.set_property(params, 'goal', 1);
            this.set_property(params, 'MAX_TRANSLATION', .1);
            this.set_property(params, 'MAX_ROTATION', deg2rad(1));
+           this.set_property(params, 'actuator_states', ones(1,log2(this.n_unique_states)));
            
 %            if this.goal == 3
 %                this.set_property(params, 'can_vary_alpha', [1 1 0 1 1 1 1])
@@ -105,10 +109,24 @@ classdef GaitSynthesizer < handle
            this.var_motions = squeeze(var(motion_primitive_data, 0, 1))';
            
            % Set up optimization problem.
+           if nnz(this.actuator_states) == length(this.actuator_states)
+               n_states = this.n_unique_states;
+               % Define number of motion primitives.
+               n_primitives = length(motion_primitive_data);
+           else  % one or more actuators is not functioning
+               n_states = 2^nnz(this.actuator_states);
+               unusable_actuators = find(~this.actuator_states);
+               % prune the unusable edges
+               state_actuator_map = decimalToBinaryVector(0:this.n_unique_states-1,log2(this.n_unique_states));
+               usable_states = 1:this.n_unique_states;
+               for i = 1:numel(unusable_actuators)
+                   pruned_states(:,i) = find(state_actuator_map(:,i));
+               end
+               pruned_states = unique(reshape(pruned_states,[],1));
+               usable_states(pruned_states) = [];
+           end
            
-           n_states = this.n_unique_states;
-           % Define number of motion primitives.
-           n_primitives = length(motion_primitive_data);
+
            
            % Build incidence matrices for simple cycle constraint.
            B = zeros(n_states, n_primitives); % vertex-arc incidence matrix

@@ -105,7 +105,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
           end
         end
         
-        % Convert the 241 roobot state sequence into a sequence of motion 
+        % Convert the robot state sequence into a sequence of motion 
         % primitive labels.
         function states_to_primitives(this)
             states = [this.robo_states this.robo_states(1)];

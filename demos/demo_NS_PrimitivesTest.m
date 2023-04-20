@@ -121,12 +121,12 @@ save data/NS_motion_primitives.mat motion_primitive_data
 % [4] == Compare all Euler Tour data with the sheathed counterparts.
 motion_primitive_data_S = load('data/experiment_2_motion_primitives_corrected.mat').motion_primitive_data;
 figure(2)
-plot_all_deviations(motion_primitive_data_S)
-title('Motion primitive variation for sheathed orange robot on black mat')
+t_S = plot_all_deviations(motion_primitive_data_S);
+title(t_S, 'Motion primitive variation for sheathed orange robot on black mat')
 
 figure(3)
-plot_all_deviations(motion_primitive_data)
-title('Motion primitive variation for no sheath orange robot on black mat')
+t_32SR = plot_all_deviations(motion_primitive_data);
+title(t_32SR, 'Motion primitive variation for no sheath orange robot on black mat')
 
 %% [5] == Instantiate GaitPredict() objects for each gait permutation.
 
@@ -162,28 +162,33 @@ if show_markers
 end
 end
 
-function plot_all_deviations(mp_data)
+function t = plot_all_deviations(mp_data)
     avg_motions = squeeze(mean(mp_data, 1))';
     avg_motions(3,:) = rad2deg(avg_motions(3,:));
     var_motions = squeeze(var(mp_data, 0, 1))';
     stand_devs = var_motions.^(.5);
     stand_devs(3,:) = rad2deg(stand_devs(3,:));
-    tiledlayout(3, 1)
+    t = tiledlayout(3, 1);
+    xlabel(t, 'Motion Primitive Index');
+    t.TileSpacing = 'tight';
+    t.Padding = 'tight';
         for i = 1:3
         nexttile;
         x = 1:length(avg_motions);
-
-        xlabel('Motion Primitive Index')
-
+        xlim([0 240])
         switch i 
             case 1
-                title('X-axis translation for motion primitives')
+                %title('X-axis translation for motion primitives')
                 ylabel('X-axis translation (cm)')
+                ax = gca;
+                ax.XAxis.Visible = 'off';
             case 2 
-                title('Y-axis translation for motion primitives')
+                %title('Y-axis translation for motion primitives')
                 ylabel('Y-axis translation (cm)')
+                ax = gca;
+                ax.XAxis.Visible = 'off';
             case 3 
-                title('Rotation for motion primitives')
+                %title('Rotation for motion primitives')
                 ylabel('Rotation (degrees)')
         end
 
