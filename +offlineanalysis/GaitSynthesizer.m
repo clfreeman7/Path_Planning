@@ -113,19 +113,48 @@ classdef GaitSynthesizer < handle
                n_states = this.n_unique_states;
                % Define number of motion primitives.
                n_primitives = length(motion_primitive_data);
+
+               avg_motions = this.avg_motions;
+               var_motions = this.var_motions;
            else  % one or more actuators is not functioning
-               n_states = 2^nnz(this.actuator_states);
-               unusable_actuators = find(~this.actuator_states);
-               % prune the unusable edges
-               state_actuator_map = decimalToBinaryVector(0:this.n_unique_states-1,log2(this.n_unique_states));
-               usable_states = 1:this.n_unique_states;
-               for i = 1:numel(unusable_actuators)
-                   pruned_states(:,i) = find(state_actuator_map(:,i));
+               % Find the non-functioning actuator(s).
+               broken_actuators = find(~this.actuator_states);
+
+               % Create a map between feasible robot states all robot states.
+               state_actuator_map = dec2bin(0:this.n_unique_states-1,log2(this.n_unique_states))-'0';
+               feasible_states = 1:this.n_unique_states;
+               pruned_states = zeros(this.n_unique_states/2 ,numel(broken_actuators));      % infeasible states due to broken actuator
+               for i = 1:numel(broken_actuators)
+                   pruned_states(:,i) = find(state_actuator_map(:,broken_actuators(i)));
                end
                pruned_states = unique(reshape(pruned_states,[],1));
-               usable_states(pruned_states) = [];
+               feasible_states(pruned_states) = [];
+               n_states = length(feasible_states);
+
+               % Create a map between feasible motion primitives and all
+               % robot transitions (graph edges).
+               % First, construct map of all motion primitive labels.
+               edge_table = zeros(this.n_unique_states);
+               primitive_num = 0;
+               for i = 1:this.n_unique_states    % tail state (from)
+                   for j = 1:this.n_unique_states    % head state (to)
+                       if j ~= i
+                           primitive_num = primitive_num + 1;
+                           edge_table(i,j) = primitive_num;
+                       end
+                   end
+               end
+               feasible_edges = 1:primitive_num;
+
+               % Prune all infeasible transitions.
+               pruned_edges = [edge_table(pruned_states,:) edge_table(:,pruned_states)'];
+               pruned_edges = nonzeros(unique(reshape(pruned_edges,[],1)));
+               feasible_edges(pruned_edges) = [];
+               n_primitives = length(feasible_edges);
+
+               avg_motions = this.avg_motions(:,feasible_edges);
+               var_motions = this.var_motions(:,feasible_edges);
            end
-           
 
            
            % Build incidence matrices for simple cycle constraint.
@@ -133,7 +162,7 @@ classdef GaitSynthesizer < handle
            B_tail = B; % tail incidence matric
            B_head = B; % head incidence matric
            for iEdges = 1:n_primitives
-             [tail_state,head_state] = forwardmap(iEdges, this.n_unique_states);
+             [tail_state,head_state] = forwardmap(iEdges, n_states);
              B_tail(tail_state, iEdges) = 1;
              B_head(head_state, iEdges)= 1;
            end
@@ -149,13 +178,13 @@ classdef GaitSynthesizer < handle
            A = [A; -ones(1, n_primitives)]; 
            if this.goal == 1
               % add inequality constraint to ensure no rotation 
-              A = [A; this.avg_motions(3,:); -this.avg_motions(3,:)];
+              A = [A; avg_motions(3,:); -avg_motions(3,:)];
               b = [b; this.MAX_ROTATION*ones(2, 1)];
               n_parameters = 2;
               alpha_motion_nom = mean(this.alpha_motion);
            elseif this.goal == 2
               % add inequality constraint to ensure no translation 
-              A = [A; this.avg_motions(1:2,:); -this.avg_motions(1:2,:)];
+              A = [A; avg_motions(1:2,:); -avg_motions(1:2,:)];
               b = [b; this.MAX_TRANSLATION*ones(4, 1)];
               n_parameters = 1;
               alpha_motion_nom = mean(this.alpha_motion);
@@ -187,8 +216,8 @@ classdef GaitSynthesizer < handle
               
               % Define cost function.
               for i = 1:n_primitives
-                  f(i) = alpha_motion' * this.avg_motions(:,i) + ...
-                         alpha_var' * this.var_motions(:,i) + alpha_len;
+                  f(i) = alpha_motion' * avg_motions(:,i) + ...
+                         alpha_var' * var_motions(:,i) + alpha_len;
               end
               
               
@@ -271,6 +300,12 @@ classdef GaitSynthesizer < handle
               % Check whether this new solution is unique or has already
               % been found.
               if ~isempty(cycle)
+                  % Remap to original states and primitives if loss-of-limb
+                  % scenario.
+                  if nnz(this.actuator_states) ~= length(this.actuator_states)
+                      cycle = feasible_edges(cycle)';
+                  end
+
                   solutions{n_sols + 1} = num2str(cycle');
                   if isempty(solutions)
                       isNewCycle = true;

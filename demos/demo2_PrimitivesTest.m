@@ -111,7 +111,9 @@ a.Layout.Tile = 'east';
 
 title(t, 'Motion primitive exploration (Euler tours) for orange robot on black mat','FontSize',24)
 
-
+% Add correction.
+delta_x_data = -delta_x_data;
+delta_y_data = -delta_y_data;
 % [3] == Concatenate all motion primitive motion data into a 3D matrix.
 motion_primitive_data = cat(3, delta_x_data, delta_y_data, delta_theta_data);
 

@@ -24,19 +24,51 @@ clear; clc; close all;
 addpath('../');
 
 motion_primitive_data = load('data/NS_motion_primitives.mat').motion_primitive_data;
+% gait P = synthesized loss of limb gait with NS_mps with params
+% params.goal = 2;
+% params.actuator_states = [0 1 1 1];
+% params.alpha_len = .005;   
+% params.alpha_var = .1*ones(3,1);
+% gait Q = synthesized loss of limb gait with 32SR_mps with same params
+
+% gait R = synthesized with 32SR with params
+% params.goal = 1  % 2;
+% params.actuator_states = [0 1 1 1];
+% params.alpha_len = .0001;   %.2
+% params.alpha_var = .001*ones(3,1);
+
+% Gait S= synthesized with 32SR with params
+% params.goal = 1  % 2;
+% params.actuator_states = [0 1 1 1];
+% params.alpha_len = .0001;   %.2
+% params.alpha_var = [.5 .5 30]';
+% params.MAX_ROTATION = deg2rad(.5);
+% [4] == Set up parameters for gait synthesis.
+
+
+% Gait T= synthesized with 32SR with params
+% params.goal = 1  % 2;
+% params.alpha_len = .2;   %.2
+% params.alpha_var = [.1 .1 .1]';
+% params.MAX_ROTATION = deg2rad(.5);
+
+%Gait V = syntheized with 32SR params
+
 
 % [4] == Set up parameters for gait synthesis.
+
 params.robot_name = 'orange';
 params.substrate= 'black mat';
-params.goal = 2;
-params.alpha_len = .2;
+params.goal = 2;  % 2;
+params.alpha_len = .2;   %.2
+params.alpha_var = [.01 .01 .01]';
 % [3] == Instantiate GaitSynthesizer() object to generate gaits from motion
 % primitive data.
 gait_synthesis = offlineanalysis.GaitSynthesizer( motion_primitive_data , params)
 gaits = struct2table(gait_synthesis.solutions);
 
 % Sort gaits by the rotational speed. 
-sorted_gaits = sortrows(gaits, 'rot_speed', 'descend');
+sorted_gaits = sortrows(gaits, 'lin_speed', 'descend');
 all_gaits = table2struct(sorted_gaits);
 
 for i = 1:length(all_gaits)

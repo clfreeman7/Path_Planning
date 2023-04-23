@@ -23,7 +23,7 @@ clear; clc; close all;
 % Add dependencies to classpath
 addpath('../');
 
-motion_primitive_data = load('data/NS_motion_primitives.mat').motion_primitive_data;
+motion_primitive_data = load('data/32SR_motion_primitives.mat').motion_primitive_data;
 
 % [4] == Set up parameters for gait synthesis.
 params.robot_name = 'orange';

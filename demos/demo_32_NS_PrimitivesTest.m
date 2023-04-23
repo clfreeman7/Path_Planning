@@ -36,13 +36,13 @@ set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 
 % [1] == Define experimental parameters after investigating video. 
-frame_start_list = [173, 73, 74, 226, 111];
+frame_start_list = [51, 40, 2, 216, 234];
 
 % Find marker order by investigating first frame.
 marker_order_list = [2 4 3 1;
-                     1 3 4 2;
                      2 3 4 1;
-                     2 4 3 1;
+                     1 3 4 2;
+                     1 3 4 2;
                      2 4 3 1];
 show_markers = false;
 

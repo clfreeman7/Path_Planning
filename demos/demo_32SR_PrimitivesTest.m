@@ -121,18 +121,24 @@ save data/32SR_motion_primitives.mat motion_primitive_data
 
 % [4] == Compare all Euler Tour data with the sheathed counterparts.
 motion_primitive_data_S = load('data/experiment_2_motion_primitives_corrected.mat').motion_primitive_data;
-figure(2)
+figure('Position',[100 300 1500 900])
 t_S = plot_all_deviations(motion_primitive_data_S);
-title(t_S, 'Motion primitive variation for orange robot on black mat with sheath tether')
+%title(t_S, 'Motion primitive variation for orange robot on black mat with sheath tether')
 
 motion_primitive_data_NS = load('data/NS_motion_primitives.mat').motion_primitive_data;
-figure(3)
+figure('Position',[100 300 1500 900])
 t_NS = plot_all_deviations(motion_primitive_data_NS);
-title(t_NS, 'Motion primitive variation for orange robot on black mat with no sheath tether')
+%title(t_NS, 'Motion primitive variation for orange robot on black mat with no sheath tether (28 AWG)')
 
-figure(4)
+motion_primitive_data_NS_32 = load('data/NS_32_motion_primitives.mat').motion_primitive_data;
+figure('Position',[100 300 1500 900])
+t_NS_32 = plot_all_deviations(motion_primitive_data_NS_32);
+%title(t_NS, 'Motion primitive variation for orange robot on black mat with no sheath tether')
+
+
+figure('Position',[100 300 1500 900])
 t_32SR = plot_all_deviations(motion_primitive_data);
-title(t_32SR, 'Motion primitive variation for orange robot on black mat with slip ring tether')
+%title(t_32SR, 'Motion primitive variation for orange robot on black mat with slip ring tether')
 
 %% [5] == Instantiate GaitPredict() objects for each gait permutation.
 
@@ -175,7 +181,7 @@ function t = plot_all_deviations(mp_data)
     stand_devs = var_motions.^(.5);
     stand_devs(3,:) = rad2deg(stand_devs(3,:));
     t = tiledlayout(3, 1);
-    xlabel(t, 'Motion Primitive Index');
+    xlabel(t, 'Motion Primitive Index','FontSize',20);
     t.TileSpacing = 'tight';
     t.Padding = 'tight';
         for i = 1:3
@@ -185,28 +191,38 @@ function t = plot_all_deviations(mp_data)
         switch i 
             case 1
                 %title('X-axis translation for motion primitives')
-                ylabel('X-axis translation (cm)')
+                ylabel('X-axis translation (cm)','FontSize',20)
+                xticks(0:40:240)
                 ax = gca;
                 ax.XAxis.Visible = 'off';
+                set(gca,'FontSize',16);
+                ylim([-2.5 2.5])
             case 2 
                 %title('Y-axis translation for motion primitives')
-                ylabel('Y-axis translation (cm)')
+                ylabel('Y-axis translation (cm)','FontSize',20)
+                xticks(0:40:240)
                 ax = gca;
                 ax.XAxis.Visible = 'off';
+                set(gca,'FontSize',16);
+                ylim([-2.5 2.5])
+
             case 3 
                % title('Rotation for motion primitives')
-                ylabel('Rotation (degrees)')
+                ylabel('Rotation (deg)','FontSize',20)
+                set(gca,'FontSize',16);
+                ylim([-15 15])
+                xticks(0:40:240)
         end
         grid on 
-        grid minor
         hold on
+        yline(0)
         plus_sd = avg_motions(i,:)+stand_devs(i,:);
         minus_sd = avg_motions(i,:)-stand_devs(i,:);
         % plot(x,plus_sd,'r')
         % plot(x,minus_sd,'r')
-        p=fill([x fliplr(x)],[plus_sd fliplr(minus_sd)],'r','FaceAlpha',0.2);
-        p.EdgeColor = 'r';
-        plot(x,avg_motions(i,:),'b')
+        p=fill([x fliplr(x)],[plus_sd fliplr(minus_sd)],'r','FaceAlpha',0.25);
+        p.EdgeColor = 'none';
+        plot(x,avg_motions(i,:),'r','LineWidth',1)
         end
 end
 
