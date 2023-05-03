@@ -59,9 +59,10 @@ motion_primitive_data = load('data/NS_motion_primitives.mat').motion_primitive_d
 
 params.robot_name = 'orange';
 params.substrate= 'black mat';
-params.goal = 2;  % 2;
-params.alpha_len = .2;   %.2
-params.alpha_var = [.01 .01 .01]';
+params.goal = 1;  % 2;
+params.alpha_len = .1;   %.2
+params.alpha_var = [.1 .1 .1]';
+params.actuator_states = [1 1 1 0];
 % [3] == Instantiate GaitSynthesizer() object to generate gaits from motion
 % primitive data.
 gait_synthesis = offlineanalysis.GaitSynthesizer( motion_primitive_data , params)

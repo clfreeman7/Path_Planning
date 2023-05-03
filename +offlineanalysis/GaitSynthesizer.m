@@ -327,8 +327,8 @@ classdef GaitSynthesizer < handle
                     this.solutions(n_sols).lin_speed = this.solutions(n_sols).distance / length(cycle);
                     this.solutions(n_sols).rot_speed = this.solutions(n_sols).total_rot_deg / length(cycle);
                     solutions{n_sols} = num2str(cycle');
-                    this.solutions(n_sols).tail_states = tail_list;
-                    this.solutions(n_sols).head_states = head_list;
+                    this.solutions(n_sols).tail_states = feasible_states(tail_list);
+                    this.solutions(n_sols).head_states = feasible_states(head_list);
                   end
               end
                   
