@@ -23,7 +23,7 @@ clear; clc; close all;
 % Add dependencies to classpath
 addpath('../');
 
-motion_primitive_data = load('data/NS_motion_primitives.mat').motion_primitive_data;
+motion_primitive_data = load('data/32SR_motion_primitives.mat').motion_primitive_data;
 % gait P = synthesized loss of limb gait with NS_mps with params
 % params.goal = 2;
 % params.actuator_states = [0 1 1 1];
@@ -54,15 +54,61 @@ motion_primitive_data = load('data/NS_motion_primitives.mat').motion_primitive_d
 
 %Gait V = syntheized with 32SR params
 
+% Gait R, 4F, 4G = synthesized with 32SR params
+% params.goal = 1;  % 2;
+% params.alpha_len = .3;   %.2
+% params.alpha_var = [.1 .1 1]';
+% params.MAX_ROTATION = deg2rad(.7);
+
+%Gait 4H synthesized with 32SR params
+% params.goal = 2;  % 2;
+% params.alpha_len = .15;   %.2
+% params.alpha_var = [.1 .1 .1]';
+% params.MAX_TRANSLATION = .08;
+
+%Gait 4I synthesized with 32SR params
+% params.goal = 2;  % 2;
+% params.alpha_len = .1;   %.2
+% params.alpha_var = [.01 .01 .01]';
+% params.MAX_TRANSLATION = .15;
+
+%Gait 4J synthesized with 32SR params
+% params.goal = 2;  % 2;
+% params.alpha_len = 1;   %.2
+% params.alpha_var = [.001 .001 .001]';
+% params.alpha_motion = [20 20 20]';
+% params.MAX_TRANSLATION = .05;
+% Gait 4C synthesized with 32Sr params
+% params.goal = 2;  % 2;
+% params.alpha_len = .01;   %.2
+% params.alpha_var = [.1 .1 .1]';
+% params.alpha_motion = [8 8 8]';
+% params.actuator_states = [1 1 1 0];
+% Gait 4D synthesized with 32SR params
+% params.goal = 2;  % 2;
+% params.alpha_len = .01;   %.2
+% params.alpha_var = [.1 .1 .1]';
+% params.alpha_motion = [8 8 8]';
+% params.actuator_states = [0 1 1 1];
+
+% Gait 4A synthesized with 32SR params
+% params.goal = 1;  % 2;
+% params.alpha_len = .001;   %.2
+% params.alpha_var = [.5 .5 .5]';
+% params.alpha_motion = [8 8 8]';
+% params.actuator_states = [0 1 1 1];
 
 % [4] == Set up parameters for gait synthesis.
 
 params.robot_name = 'orange';
 params.substrate= 'black mat';
 params.goal = 1;  % 2;
-params.alpha_len = .1;   %.2
-params.alpha_var = [.1 .1 .1]';
-params.actuator_states = [1 1 1 0];
+params.alpha_len = .001;   %.2
+params.alpha_var = [.5 .5 .5]';
+params.alpha_motion = [8 8 8]';
+params.actuator_states = [0 1 1 1];
+
+%params.actuator_states = [1 1 1 0];
 % [3] == Instantiate GaitSynthesizer() object to generate gaits from motion
 % primitive data.
 gait_synthesis = offlineanalysis.GaitSynthesizer( motion_primitive_data , params)
@@ -78,8 +124,8 @@ end
 
 
 figure
-t = tiledlayout(2,3);
-for i = 1:min(6, length(all_gaits))
+t = tiledlayout(3,4);
+for i = 1:min(12, length(all_gaits))
     nexttile;
     predicted_poses{i}(:,:) = predicted_NS(i).plot(60);
     title(['Synthesized Gait ', num2str(i), ': [', num2str(all_gaits(i).tail_states)], "]")

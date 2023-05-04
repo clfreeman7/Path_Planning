@@ -116,6 +116,7 @@ classdef GaitSynthesizer < handle
 
                avg_motions = this.avg_motions;
                var_motions = this.var_motions;
+               feasible_states = 1:n_states;
            else  % one or more actuators is not functioning
                % Find the non-functioning actuator(s).
                broken_actuators = find(~this.actuator_states);
