@@ -44,7 +44,6 @@ for i = 1:10
     % Define robot.
     exp_3(i).params.robot_name = 'MTA3';
     exp_3(i).params.substrate = 'carpet';
-    exp_3(i).params.substrate = 'carpet';
     exp_3(i).params.n_unique_states = 8;
     % Define pixel length.
     exp_3(i).params.pixel_length = 1/8.6343;
