@@ -66,7 +66,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
           this@offlineanalysis.ExperimentalData( raw_data, params ); 
           this.set_property(params, 'n_unique_states', 16);
           this.set_property(params, 'n_cycles', 30);
-          
+          this.set_property(params,'keyframes',[]);
           % Define sequence of robot states.
           this.robo_states = gait_sequence;
           
@@ -76,10 +76,11 @@ classdef GaitTest < offlineanalysis.ExperimentalData
           this.states_to_primitives;
           
           % Find the local rotation matrices for each motion primitive. 
-           if size(raw_data, 2) > 3*this.n_markers + 2*9 + 2*3 % if timestamps are included in the raw data
+            if ~isempty(this.keyframes)
+            elseif size(raw_data, 2) > 3*this.n_markers + 2*9 + 2*3 % if timestamps are included in the raw data
                 n_keyframes = this.n_cycles*this.len_gait+2;
-            this.keyframes = zeros(n_keyframes, 1);
-            this.keyframes(1) = this.frame_1 - 1;
+                this.keyframes = zeros(n_keyframes, 1);
+                this.keyframes(1) = this.frame_1 - 1;
 
                 start_time = this.timestamps(this.keyframes(1));
                 end_time = start_time + (n_keyframes - 1)*this.transition_time;
@@ -89,7 +90,7 @@ classdef GaitTest < offlineanalysis.ExperimentalData
                     this.keyframes(i) = idx;
                 end
             else
-          this.extract_keyframes;
+                this.extract_keyframes;
             end
           this.calculate_local_motions;
         end
