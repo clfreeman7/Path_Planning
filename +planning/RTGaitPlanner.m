@@ -107,8 +107,8 @@ classdef RTGaitPlanner < pathGen.RTGreedyPlanner
         trans_gait_period = a_trans_gaits(ii).len_gait*a_trans_gaits(ii).transition_time;
         grid_size = this.dg;
         trans_dt = trans_gait_period*ceil(grid_size/(trans_speed*trans_gait_period));
-%         trans_max_moves = floor(3/2*pi/a_rot_gaits.Twist(3));   % [TODO] this is original; vaguely remember intentionally coding rot-trans dependency - don't remember why
-        trans_max_moves = floor(3/2*pi/(a_trans_gaits(ii).Twist(3)*trans_dt));
+%         trans_max_moves = floor(3/2*pi / abs(a_rot_gaits.Twist(3)));   % [TODO] this is original; vaguely remember intentionally coding rot-trans dependency - don't remember why
+        trans_max_moves = floor(3/2*pi / abs(a_trans_gaits(ii).Twist(3)*trans_dt));
   
         % Transcribe translate gait data as symmetrically-permutated motion primitives
         trans_mp_params.name = a_trans_gaits(ii).gait_name;
