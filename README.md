@@ -1,5 +1,5 @@
 # Path_Planning
-This repository includes Arduino and MATLAB files for "Multi-Gait Locomotion Planning and Tracking for Tendon-Actuated Terrestrial Soft Robot (TerreSoRo)", presented at IROS 2023. The associated conference paper can be cited as follows:
+This repository includes Arduino and MATLAB files for "Multi-Gait Locomotion Planning and Tracking for Tendon-Actuated Terrestrial Soft Robot (TerreSoRo)", presented at IROS 2023. The ![associated conference paper](https://ieeexplore.ieee.org/document/10341926/keywords#keywords) can be cited as follows:
 
 A. N. Mahendran, C. Freeman, A. H. Chang, M. McDougall, P. A. Vela and V. Vikas, "Multi-Gait Locomotion Planning and Tracking for Tendon-Actuated Terrestrial Soft Robot (TerreSoRo)," 2023 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), Detroit, MI, USA, 2023, pp. 2542-2549, doi: 10.1109/IROS55552.2023.10341926.
 
